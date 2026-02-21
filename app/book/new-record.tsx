@@ -72,11 +72,11 @@ export default function NewRecordScreen() {
 
   const handleSave = () => {
     if (!text.trim()) {
-      Alert.alert('Required', 'Please enter a sentence to remember.');
+      Alert.alert('Required', 'Please enter a quote to remember.');
       return;
     }
     const tagString = tags.length > 0 ? `\nTags: ${tags.map(t => '#' + t).join(', ')}` : '';
-    Alert.alert('Success', `Sentence recorded! (Dummy)${tagString}`, [
+    Alert.alert('Success', `Quote recorded! (Dummy)${tagString}`, [
       { text: 'OK', onPress: () => router.back() }
     ]);
   };
@@ -126,7 +126,7 @@ export default function NewRecordScreen() {
         <View style={styles.textAreaContainer}>
           <TextInput
             style={styles.textArea}
-            placeholder="Type a sentence you want to remember..."
+            placeholder="Type a quote you want to remember..."
             placeholderTextColor="#94a3b8"
             multiline
             textAlignVertical="top"

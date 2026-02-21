@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { BOOKS, SENTENCES } from '../../constants/dummy';
+import { BOOKS, QUOTES } from '../../constants/dummy';
 
 export default function BookDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -12,12 +12,12 @@ export default function BookDetailScreen() {
   const insets = useSafeAreaInsets();
   
   const book = BOOKS.find(b => b.id === id) || BOOKS[0];
-  const [favoriteSentences, setFavoriteSentences] = useState<Record<string, boolean>>({});
+  const [favoriteQuotes, setFavoriteQuotes] = useState<Record<string, boolean>>({});
 
-  const toggleFavorite = (sentenceId: string) => {
-    setFavoriteSentences(prev => ({
+  const toggleFavorite = (quoteId: string) => {
+    setFavoriteQuotes(prev => ({
       ...prev,
-      [sentenceId]: !prev[sentenceId]
+      [quoteId]: !prev[quoteId]
     }));
   };
 
@@ -93,14 +93,14 @@ export default function BookDetailScreen() {
         <View style={styles.divider} />
 
         {/* Section Title */}
-        <View style={styles.sentencesHeader}>
-          <Text style={styles.sentencesTitle}>Memorable Sentences</Text>
-          <Text style={styles.sentencesCount}>Total {SENTENCES.length}</Text>
+        <View style={styles.quotesHeader}>
+          <Text style={styles.quotesTitle}>Memorable Quotes</Text>
+          <Text style={styles.quotesCount}>Total {QUOTES.length}</Text>
         </View>
 
-        {/* Sentences List */}
-        <View style={styles.sentencesList}>
-          {SENTENCES.length === 0 ? (
+        {/* Quotes List */}
+        <View style={styles.quotesList}>
+          {QUOTES.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <MaterialIcons name="format-quote" size={48} color="#cbd5e1" />
               <Text style={styles.emptyStateTitle}>아직 기록된 문장이 없습니다</Text>
@@ -109,36 +109,36 @@ export default function BookDetailScreen() {
               </Text>
             </View>
           ) : (
-            SENTENCES.map((sentence) => (
+            QUOTES.map((quote) => (
               <TouchableOpacity 
-                key={sentence.id} 
-                style={styles.sentenceCard} 
+                key={quote.id} 
+                style={styles.quoteCard} 
                 activeOpacity={0.9}
-                onPress={() => router.push({ pathname: '/book/sentence', params: { bookId: id, sentenceId: sentence.id } })}
+                onPress={() => router.push({ pathname: '/book/quote', params: { bookId: id, quoteId: quote.id } })}
               >
                 <TouchableOpacity 
                   style={styles.favoriteBadge}
-                  onPress={() => toggleFavorite(sentence.id)}
+                  onPress={() => toggleFavorite(quote.id)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <MaterialIcons 
-                    name={favoriteSentences[sentence.id] ? "favorite" : "favorite-border"} 
+                    name={favoriteQuotes[quote.id] ? "favorite" : "favorite-border"} 
                     size={20} 
-                    color={favoriteSentences[sentence.id] ? "#306ee8" : "#cbd5e1"} 
+                    color={favoriteQuotes[quote.id] ? "#306ee8" : "#cbd5e1"} 
                   />
                 </TouchableOpacity>
 
-                <Text style={styles.sentenceText} numberOfLines={3}>
-                  {sentence.text}
+                <Text style={styles.quoteText} numberOfLines={3}>
+                  {quote.text}
                 </Text>
                 
-                <View style={styles.sentenceFooter}>
-                  <Text style={styles.dateText}>{sentence.date}</Text>
+                <View style={styles.quoteFooter}>
+                  <Text style={styles.dateText}>{quote.date}</Text>
                   
-                  <View style={styles.commentBadgeContainer}>
-                    <View style={styles.commentBadge}>
+                  <View style={styles.thoughtBadgeContainer}>
+                    <View style={styles.thoughtBadge}>
                       <MaterialIcons name="chat-bubble-outline" size={16} color="#94a3b8" />
-                      <Text style={styles.commentCount}>{sentence.commentsCount}</Text>
+                      <Text style={styles.thoughtCount}>{quote.thoughtsCount}</Text>
                     </View>
                   </View>
                 </View>
@@ -159,7 +159,7 @@ export default function BookDetailScreen() {
           onPress={() => router.push({ pathname: '/book/new-record', params: { bookId: id } })}
         >
           <MaterialIcons name="edit-note" size={24} color="#ffffff" />
-          <Text style={styles.recordButtonText}>Record New Sentence</Text>
+          <Text style={styles.recordButtonText}>Record New Quote</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e2e8f0',
     marginVertical: 16,
   },
-  sentencesHeader: {
+  quotesHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
@@ -260,21 +260,21 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 16,
   },
-  sentencesTitle: {
+  quotesTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#0f172a',
   },
-  sentencesCount: {
+  quotesCount: {
     fontSize: 12,
     color: '#64748b',
     marginBottom: 4,
   },
-  sentencesList: {
+  quotesList: {
     paddingHorizontal: 16,
     gap: 16,
   },
-  sentenceCard: {
+  quoteCard: {
     padding: 20,
     borderRadius: 12,
     backgroundColor: '#ffffff',
@@ -299,15 +299,15 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 10,
   },
-  sentenceText: {
+  quoteText: {
     fontSize: 16,
     lineHeight: 24,
     color: '#334155',
     fontStyle: 'italic',
     marginBottom: 16,
-    paddingRight: 32, // space for the absolute icon
+    paddingRight: 32,
   },
-  sentenceFooter: {
+  quoteFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -316,17 +316,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#94a3b8',
   },
-  commentBadgeContainer: {
+  thoughtBadgeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  commentBadge: {
+  thoughtBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  commentCount: {
+  thoughtCount: {
     fontSize: 12,
     color: '#94a3b8',
   },

@@ -55,29 +55,29 @@ export const BOOKS = [
   }
 ];
 
-export const SENTENCES = [
+export const QUOTES = [
   {
     id: '1',
     text: '"Only the dead stay seventeen forever. The rest of us keep getting older."',
     date: '2023.10.27',
-    commentsCount: 3,
+    thoughtsCount: 3,
   },
   {
     id: '2',
     text: '"If you only read the books that everyone else is reading, you can only think what everyone else is thinking."',
     date: '2023.10.15',
-    commentsCount: 1,
+    thoughtsCount: 1,
   },
   {
     id: '3',
     text: '"Don\'t feel sorry for yourself. Only assholes do that."',
     date: '2023.09.22',
-    commentsCount: 5,
+    thoughtsCount: 5,
   },
   {
     id: '4',
     text: '"What happens when people open their hearts? They get better."',
     date: '2023.09.10',
-    commentsCount: 0,
+    thoughtsCount: 0,
   }
 ];

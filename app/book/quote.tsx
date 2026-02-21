@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, Dimensions, Alert, Keyboard } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SENTENCES } from '../../constants/dummy';
+import { QUOTES } from '../../constants/dummy';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -27,18 +27,18 @@ const TIMELINE_EVENTS = [
   }
 ];
 
-export default function SentenceDetailScreen() {
+export default function QuoteDetailScreen() {
   const router = useRouter();
-  const { sentenceId } = useLocalSearchParams();
+  const { quoteId } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
 
-  const sentence = SENTENCES.find(s => s.id === sentenceId) || SENTENCES[0];
+  const quote = QUOTES.find(q => q.id === quoteId) || QUOTES[0];
   const [thought, setThought] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  const [currentSentenceText, setCurrentSentenceText] = useState(sentence.text);
-  const [editingSentence, setEditingSentence] = useState(false);
-  const [editedSentenceText, setEditedSentenceText] = useState('');
+  const [currentQuoteText, setCurrentQuoteText] = useState(quote.text);
+  const [editingQuote, setEditingQuote] = useState(false);
+  const [editedQuoteText, setEditedQuoteText] = useState('');
 
   const [events, setEvents] = useState(TIMELINE_EVENTS);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
@@ -47,13 +47,13 @@ export default function SentenceDetailScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [eventYPositions, setEventYPositions] = useState<{ [key: string]: number }>({});
 
-  const startEditingSentence = () => {
-    setEditedSentenceText(currentSentenceText);
-    setEditingSentence(true);
+  const startEditingQuote = () => {
+    setEditedQuoteText(currentQuoteText);
+    setEditingQuote(true);
   };
 
-  const handleSentenceBlur = () => {
-    if (editedSentenceText !== currentSentenceText) {
+  const handleQuoteBlur = () => {
+    if (editedQuoteText !== currentQuoteText) {
       Alert.alert(
         'Do you want to edit?',
         '',
@@ -62,28 +62,27 @@ export default function SentenceDetailScreen() {
             text: 'Cancel',
             style: 'cancel',
             onPress: () => {
-              // Cancel 버튼을 누르면 기존 텍스트로 복원하고 수정 모드 종료
-              setEditedSentenceText(currentSentenceText);
-              setEditingSentence(false);
+              setEditedQuoteText(currentQuoteText);
+              setEditingQuote(false);
             }
           },
           {
             text: 'OK',
             onPress: () => {
-              if (!editedSentenceText.trim()) {
-                Alert.alert('Error', 'Sentence cannot be empty.');
-                setEditedSentenceText(currentSentenceText);
-                setEditingSentence(false);
+              if (!editedQuoteText.trim()) {
+                Alert.alert('Error', 'Quote cannot be empty.');
+                setEditedQuoteText(currentQuoteText);
+                setEditingQuote(false);
                 return;
               }
-              setCurrentSentenceText(editedSentenceText);
-              setEditingSentence(false);
+              setCurrentQuoteText(editedQuoteText);
+              setEditingQuote(false);
             }
           }
         ]
       );
     } else {
-      setEditingSentence(false);
+      setEditingQuote(false);
     }
   };
 
@@ -91,7 +90,6 @@ export default function SentenceDetailScreen() {
     setEditedEventContent(event.content);
     setEditingEventId(event.id);
 
-    // 약간의 딜레이 후 해당 컴포넌트 위치로 스크롤
     setTimeout(() => {
       if (scrollViewRef.current && eventYPositions[event.id] !== undefined) {
         scrollViewRef.current.scrollTo({ y: eventYPositions[event.id] - 100, animated: true });
@@ -153,8 +151,8 @@ export default function SentenceDetailScreen() {
       'Record Options',
       'Choose an action',
       [
-        { text: 'Edit Sentence', onPress: () => Alert.alert('Edit feature coming soon! (Dummy)') },
-        { text: 'Delete Sentence', onPress: () => Alert.alert('Deleted! (Dummy)', '', [{ text: 'OK', onPress: () => router.back() }]), style: 'destructive' },
+        { text: 'Edit Quote', onPress: () => Alert.alert('Edit feature coming soon! (Dummy)') },
+        { text: 'Delete Quote', onPress: () => Alert.alert('Deleted! (Dummy)', '', [{ text: 'OK', onPress: () => router.back() }]), style: 'destructive' },
         { text: 'Cancel', style: 'cancel' }
       ]
     );
@@ -183,7 +181,7 @@ export default function SentenceDetailScreen() {
           <MaterialIcons name="arrow-back" size={24} color="#0f172a" />
         </TouchableOpacity>
         
-        <Text style={styles.headerTitle}>Passage Details</Text>
+        <Text style={styles.headerTitle}>Quote Details</Text>
         
         <TouchableOpacity style={styles.iconButton} onPress={handleMorePress}>
           <MaterialIcons name="more-horiz" size={24} color="#0f172a" />
@@ -200,12 +198,12 @@ export default function SentenceDetailScreen() {
         <View style={styles.heroSection}>
           <View style={styles.heroHeader}>
             <Text style={styles.pageNumberText}>PAGE 112</Text>
-            {editingSentence ? (
+            {editingQuote ? (
               <TouchableOpacity style={styles.editActionBtn} onPress={() => Keyboard.dismiss()}>
                 <MaterialIcons name="check" size={20} color="#1754cf" />
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity style={styles.editActionBtn} onPress={startEditingSentence}>
+              <TouchableOpacity style={styles.editActionBtn} onPress={startEditingQuote}>
                 <MaterialIcons name="edit" size={18} color="#94a3b8" />
               </TouchableOpacity>
             )}
@@ -213,14 +211,14 @@ export default function SentenceDetailScreen() {
           
           <View style={styles.quoteWrapper}>
             <MaterialIcons name="format-quote" size={48} color="rgba(23, 84, 207, 0.2)" style={styles.quoteIconLeft} />
-            {editingSentence ? (
+            {editingQuote ? (
               <TextInput 
                 key="quote-edit"
                 style={styles.quoteText}
                 multiline
-                value={editedSentenceText}
-                onChangeText={setEditedSentenceText}
-                onBlur={handleSentenceBlur}
+                value={editedQuoteText}
+                onChangeText={setEditedQuoteText}
+                onBlur={handleQuoteBlur}
                 autoFocus
                 scrollEnabled={false}
               />
@@ -229,7 +227,7 @@ export default function SentenceDetailScreen() {
                 key="quote-view"
                 style={styles.quoteText}
                 multiline
-                value={currentSentenceText}
+                value={currentQuoteText}
                 editable={false}
                 scrollEnabled={false}
               />
@@ -260,7 +258,6 @@ export default function SentenceDetailScreen() {
                   style={styles.timelineRow}
                   onLayout={(e) => {
                     const y = e.nativeEvent.layout.y;
-                    // timelineContainer 내부 좌표이므로 상단 heroSection 높이를 대략 더해줌
                     setEventYPositions(prev => ({ ...prev, [event.id]: y + 250 }));
                   }}
                 >
@@ -394,8 +391,8 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     paddingHorizontal: 24,
-    paddingTop: 24, // move up
-    paddingBottom: 48, // keep same distance from bottom components
+    paddingTop: 24,
+    paddingBottom: 48,
     alignItems: 'center',
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
@@ -459,7 +456,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 32,
     bottom: 0,
-    left: 16 + 23, // container padding + relative center of icon col
+    left: 16 + 23,
     width: 2,
     backgroundColor: '#e2e8f0',
     zIndex: -1,
@@ -599,7 +596,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 30, // scaled for taller input
+    borderRadius: 30,
     borderWidth: 1,
     borderColor: '#cbd5e1',
     paddingLeft: 20,
@@ -619,16 +616,16 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    minHeight: 44, // match button height
+    minHeight: 44,
     lineHeight: 20,
     fontSize: 16,
     color: '#0f172a',
     paddingVertical: 0, 
     marginRight: 12,
-    textAlignVertical: 'center', // perfect centering for Android
+    textAlignVertical: 'center',
   },
   sendButton: {
-    width: 44, // slightly larger to match text layout
+    width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: '#1754cf',
