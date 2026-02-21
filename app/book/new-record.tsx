@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, Alert } from 'react-native';
-import { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, Platform, Dimensions, Alert, Keyboard, ScrollView } from 'react-native';
+import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { BOOKS } from '../../constants/dummy';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -15,22 +15,41 @@ export default function NewRecordScreen() {
 
   const book = BOOKS.find(b => b.id === bookId) || BOOKS[0];
   const [text, setText] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [tags, setTags] = useState<string[]>([]);
+  const [isTagging, setIsTagging] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleSave = () => {
     if (!text.trim()) {
       Alert.alert('Required', 'Please enter a sentence to remember.');
       return;
     }
-    Alert.alert('Success', 'Sentence recorded! (Dummy)', [
+    const tagString = tags.length > 0 ? `\nTags: ${tags.map(t => '#' + t).join(', ')}` : '';
+    Alert.alert('Success', `Sentence recorded! (Dummy)${tagString}`, [
       { text: 'OK', onPress: () => router.back() }
     ]);
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={[styles.container, { paddingBottom: keyboardHeight }]}>
       <StatusBar style="dark" />
       
       {/* Header */}
@@ -50,7 +69,12 @@ export default function NewRecordScreen() {
       </View>
 
       {/* Main Content */}
-      <View style={styles.main}>
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ padding: 24, flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Book Info Card */}
         <View style={styles.bookInfoCard}>
           <View style={styles.thumbnailWrapper}>
@@ -72,7 +96,6 @@ export default function NewRecordScreen() {
             placeholder="Type a sentence you want to remember..."
             placeholderTextColor="#94a3b8"
             multiline
-            autoFocus
             textAlignVertical="top"
             value={text}
             onChangeText={setText}
@@ -88,30 +111,61 @@ export default function NewRecordScreen() {
             placeholder="Page number (optional)"
             placeholderTextColor="#94a3b8"
             keyboardType="number-pad"
+            maxLength={4}
           />
         </View>
-      </View>
+
+        {/* Tags List */}
+        {(tags.length > 0 || isTagging) && (
+          <View style={styles.tagsWrapper}>
+            {tags.map((t, i) => (
+              <View key={i} style={styles.tagBadge}>
+                <Text style={styles.tagText}>#{t}</Text>
+                <TouchableOpacity onPress={() => setTags(tags.filter((_, index) => index !== i))}>
+                  <MaterialIcons name="close" size={14} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {isTagging && (
+              <TextInput
+                style={styles.tagInput}
+                placeholder="tag..."
+                placeholderTextColor="#94a3b8"
+                value={tagInput}
+                onChangeText={setTagInput}
+                onSubmitEditing={() => {
+                  if (tagInput.trim()) {
+                    setTags([...tags, tagInput.trim()]);
+                    setTagInput('');
+                  } else {
+                    setIsTagging(false);
+                  }
+                }}
+                autoFocus
+                returnKeyType="done"
+              />
+            )}
+          </View>
+        )}
+      </ScrollView>
 
       {/* Bottom Tool Bar */}
-      <View style={[styles.bottomToolbar, { paddingBottom: insets.bottom || 24 }]}>
+      <View style={[styles.bottomToolbar, { paddingBottom: keyboardHeight > 0 ? 12 : (insets.bottom || 24) }]}>
         <TouchableOpacity style={styles.scanBtn} activeOpacity={0.8}>
           <MaterialIcons name="document-scanner" size={20} color="#306ee8" />
           <Text style={styles.scanBtnText}>Scan Text</Text>
         </TouchableOpacity>
 
         <View style={styles.toolbarIcons}>
-          <TouchableOpacity style={styles.toolbarIconBtn}>
-            <MaterialIcons name="format-quote" size={20} color="#64748b" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.toolbarIconBtn}>
+          <TouchableOpacity 
+            style={[styles.toolbarIconBtn, isTagging && { backgroundColor: '#e2e8f0' }]}
+            onPress={() => setIsTagging(!isTagging)}
+          >
             <MaterialIcons name="tag" size={20} color="#64748b" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.toolbarIconBtn}>
-            <MaterialIcons name="mic" size={20} color="#64748b" />
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -157,10 +211,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  main: {
-    flex: 1,
-    padding: 24,
-  },
+
   bookInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -271,5 +322,35 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tagsWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 8,
+  },
+  tagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e2e8f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  tagText: {
+    color: '#334155',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  tagInput: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    fontSize: 14,
+    minWidth: 80,
+    color: '#0f172a',
   }
 });

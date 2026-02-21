@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, Alert } from 'react-native';
-import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, Dimensions, Alert, Keyboard } from 'react-native';
+import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SENTENCES } from '../../constants/dummy';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -34,6 +34,24 @@ export default function SentenceDetailScreen() {
 
   const sentence = SENTENCES.find(s => s.id === sentenceId) || SENTENCES[0];
   const [thought, setThought] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleMorePress = () => {
     Alert.alert(
@@ -58,10 +76,7 @@ export default function SentenceDetailScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={[styles.container, { paddingBottom: keyboardHeight }]}>
       <StatusBar style="dark" />
       
       {/* Header */}
@@ -81,7 +96,8 @@ export default function SentenceDetailScreen() {
       </View>
 
       <ScrollView 
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]} // extra space for bottom input
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {/* Quote Hero Section */}
@@ -159,8 +175,8 @@ export default function SentenceDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Fixed Bottom Input */}
-      <View style={[styles.bottomInputContainer, { paddingBottom: insets.bottom || 24 }]}>
+      {/* Bottom Input */}
+      <View style={[styles.bottomInputContainer, { paddingBottom: keyboardHeight > 0 ? 12 : (insets.bottom || 24) }]}>
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.textInput}
@@ -174,7 +190,7 @@ export default function SentenceDetailScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -370,10 +386,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   bottomInputContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: '#f6f6f8',
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
