@@ -35,6 +35,18 @@ export default function SentenceDetailScreen() {
   const sentence = SENTENCES.find(s => s.id === sentenceId) || SENTENCES[0];
   const [thought, setThought] = useState('');
 
+  const handleMorePress = () => {
+    Alert.alert(
+      'Record Options',
+      'Choose an action',
+      [
+        { text: 'Edit Sentence', onPress: () => Alert.alert('Edit feature coming soon! (Dummy)') },
+        { text: 'Delete Sentence', onPress: () => Alert.alert('Deleted! (Dummy)', '', [{ text: 'OK', onPress: () => router.back() }]), style: 'destructive' },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
   const handleSend = () => {
     if (!thought.trim()) {
       Alert.alert('Empty Thought', 'Please type something before sending.');
@@ -63,7 +75,7 @@ export default function SentenceDetailScreen() {
         
         <Text style={styles.headerTitle}>Passage Details</Text>
         
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity style={styles.iconButton} onPress={handleMorePress}>
           <MaterialIcons name="more-horiz" size={24} color="#0f172a" />
         </TouchableOpacity>
       </View>

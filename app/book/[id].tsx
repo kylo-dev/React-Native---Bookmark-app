@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,31 @@ export default function BookDetailScreen() {
   const insets = useSafeAreaInsets();
   
   const book = BOOKS.find(b => b.id === id) || BOOKS[0];
+
+  const handleMorePress = () => {
+    Alert.alert(
+      'Book Options',
+      'Choose an action',
+      [
+        { text: 'Edit Book Info', onPress: () => router.push({ pathname: '/book/register', params: { bookId: id } }) },
+        { text: 'Delete Book', onPress: () => Alert.alert('Deleted! (Dummy)', '', [{ text: 'OK', onPress: () => router.back() }]), style: 'destructive' },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const handleStatusPress = () => {
+    Alert.alert(
+      'Change Status',
+      'Select book status',
+      [
+        { text: 'Reading', onPress: () => Alert.alert('Status changed to Reading! (Dummy)') },
+        { text: 'Finished', onPress: () => Alert.alert('Status changed to Finished! (Dummy)') },
+        { text: 'Cancelled', onPress: () => Alert.alert('Status changed to Cancelled! (Dummy)') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -25,7 +50,7 @@ export default function BookDetailScreen() {
           <MaterialIcons name="arrow-back" size={24} color="#0f172a" />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity style={styles.iconButton} onPress={handleMorePress}>
           <MaterialIcons name="more-horiz" size={24} color="#0f172a" />
         </TouchableOpacity>
       </View>
@@ -50,10 +75,10 @@ export default function BookDetailScreen() {
           <Text style={styles.title}>{book.title}</Text>
           <Text style={styles.author}>{book.author}</Text>
           
-          <View style={styles.statusBadge}>
+          <TouchableOpacity style={styles.statusBadge} activeOpacity={0.8} onPress={handleStatusPress}>
             <View style={styles.statusDot} />
-            <Text style={styles.statusText}>{book.status || 'To Read'}</Text>
-          </View>
+            <Text style={styles.statusText}>{book.status || 'Reading'}</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Divider */}

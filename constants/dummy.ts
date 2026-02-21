@@ -15,7 +15,7 @@ export const BOOKS = [
     quotesCount: 8,
     coverUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBwlb9iIlKddOq9UfhALOyraN0OKHRoQUxfUpNgtsnVvpnW4WEdwAEAz4eLGNHUeFPM80W5_SfkTALcDMYxsja63S4eetzlRyHde0TaaL-UYffd9vUTDtdqQl0O01gI3Q7K5_tmAyvoDA0xulqzOwHHmpcxpKaiYJR8KTDZ-U93-XOD7ERgGD_qDTML83rM-321gNbxCuETQLOitSQjaFzwqSuHOQOXEd84xyxITPQ6tySDSwLBhtVoM42f8lB5jeIl1EyZ6DP7mKw',
     hasFavorite: false,
-    status: 'To Read',
+    status: 'Cancelled',
   },
   {
     id: '3',
@@ -51,7 +51,7 @@ export const BOOKS = [
     quotesCount: 5,
     coverUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAnvBEFq-96f-eaeobaD6fMvJdUDqa4OXwby3vmEP6kUM06RdteJsIo2v6sJrPGoGkKiJCiQ6QqqTHoG9JhpZO0gOcqMZuPhK1wxK7exepWhOQvWm4Rzcx9aiduPELiI7ii7PtaHV9KG--A1Aq60vn5aPV5eZ6iADS4mjZMQrQSbjyD9iez-C9QlthOT3Hg_sYfvUKWm-QmBO8HuaHjq4Qsmb_PBY1hpnjR3xBEM5Szv03aSiLRNjoaFHmjSdW5LVm4FzMQcXu56-g',
     hasFavorite: false,
-    status: 'To Read',
+    status: 'Cancelled',
   }
 ];
 

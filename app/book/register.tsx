@@ -1,23 +1,28 @@
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
 import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { BOOKS } from '../../constants/dummy';
 
 export default function RegisterBookScreen() {
   const router = useRouter();
+  const { bookId } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
+  const existingBook = bookId ? BOOKS.find(b => b.id === bookId) : null;
+  const isEditMode = !!existingBook;
+
+  const [title, setTitle] = useState(existingBook?.title || '');
+  const [author, setAuthor] = useState(existingBook?.author || '');
 
   const handleSave = () => {
     if (!title.trim() || !author.trim()) {
       Alert.alert('Required Fields', 'Please enter both book title and author.');
       return;
     }
-    Alert.alert('Success', 'Book registered! (Dummy)', [
+    Alert.alert('Success', isEditMode ? 'Book updated! (Dummy)' : 'Book registered! (Dummy)', [
       { text: 'OK', onPress: () => router.back() }
     ]);
   };
@@ -38,7 +43,7 @@ export default function RegisterBookScreen() {
           <MaterialIcons name="arrow-back" size={24} color="#475569" />
         </TouchableOpacity>
         
-        <Text style={styles.headerTitle}>Manual Entry</Text>
+        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Book Info' : 'Manual Entry'}</Text>
         
         <View style={{ width: 40 }} />
       </View>
@@ -53,10 +58,16 @@ export default function RegisterBookScreen() {
           {/* Cover Image Upload Area */}
           <View style={styles.coverUploadSection}>
             <TouchableOpacity style={styles.coverUploadBox} activeOpacity={0.8}>
-              <MaterialIcons name="add-a-photo" size={32} color="#94a3b8" />
-              <Text style={styles.coverUploadText}>Upload Cover</Text>
+              {existingBook?.coverUrl ? (
+                <Image source={{ uri: existingBook.coverUrl }} style={{ width: '100%', height: '100%', borderRadius: 10 }} />
+              ) : (
+                <>
+                  <MaterialIcons name="add-a-photo" size={32} color="#94a3b8" />
+                  <Text style={styles.coverUploadText}>Upload Cover</Text>
+                </>
+              )}
             </TouchableOpacity>
-            <Text style={styles.coverUploadHint}>Tap to add a book cover image</Text>
+            <Text style={styles.coverUploadHint}>Tap to {isEditMode ? 'change' : 'add'} a book cover image</Text>
           </View>
 
           {/* Form Fields */}
@@ -91,7 +102,7 @@ export default function RegisterBookScreen() {
               <Text style={styles.label}>Status</Text>
               {/* Simulated Select Dropdown */}
               <TouchableOpacity style={styles.selectInput} activeOpacity={0.8}>
-                <Text style={styles.selectText}>To Read</Text>
+                <Text style={styles.selectText}>{existingBook?.status || 'Reading'}</Text>
                 <MaterialIcons name="expand-more" size={20} color="#94a3b8" />
               </TouchableOpacity>
             </View>
@@ -117,7 +128,7 @@ export default function RegisterBookScreen() {
       <View style={[styles.bottomContainer, { paddingBottom: (insets?.bottom ?? 0) || 24 }]}>
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.8} onPress={handleSave}>
           <MaterialIcons name="save" size={20} color="#ffffff" />
-          <Text style={styles.saveButtonText}>Save to Library</Text>
+          <Text style={styles.saveButtonText}>{isEditMode ? 'Save Changes' : 'Save to Library'}</Text>
         </TouchableOpacity>
       </View>
       

@@ -11,7 +11,7 @@ const COLUMN_GAP = 16;
 const PADDING_HORIZONTAL = 16;
 const CARD_WIDTH = (width - PADDING_HORIZONTAL * 2 - COLUMN_GAP) / 2;
 
-const FILTER_OPTIONS = ['All Books', 'Reading', 'To Read', 'Finished'];
+const FILTER_OPTIONS = ['All Books', 'Reading', 'Finished', 'Cancelled'];
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
