@@ -1,5 +1,6 @@
-import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, Platform, Dimensions, Alert, Keyboard, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, Platform, Dimensions, Alert, Keyboard, ScrollView, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { BOOKS } from '../../constants/dummy';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -19,6 +20,36 @@ export default function NewRecordScreen() {
   const [tags, setTags] = useState<string[]>([]);
   const [isTagging, setIsTagging] = useState(false);
   const [tagInput, setTagInput] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleScanText = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Camera permission is needed to scan text.');
+        return;
+      }
+      
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setIsScanning(true);
+        // Simulate OCR API network delay
+        setTimeout(() => {
+          setIsScanning(false);
+          const scannedText = "This is a dummy text extracted via OCR. The eternal return is a mysterious idea, and Nietzsche has often perplexed other philosophers with it.";
+          setText(prev => prev + (prev.length > 0 ? '\n\n' : '') + scannedText);
+          Alert.alert('Scan Complete', 'Text has been extracted successfully. (Dummy OCR)');
+        }, 1500);
+      }
+    } catch (error) {
+      setIsScanning(false);
+      Alert.alert('Error', 'Failed to scan image for text.');
+      console.log(error);
+    }
+  };
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -151,9 +182,13 @@ export default function NewRecordScreen() {
 
       {/* Bottom Tool Bar */}
       <View style={[styles.bottomToolbar, { paddingBottom: keyboardHeight > 0 ? 12 : (insets.bottom || 24) }]}>
-        <TouchableOpacity style={styles.scanBtn} activeOpacity={0.8}>
-          <MaterialIcons name="document-scanner" size={20} color="#306ee8" />
-          <Text style={styles.scanBtnText}>Scan Text</Text>
+        <TouchableOpacity style={styles.scanBtn} activeOpacity={0.8} onPress={handleScanText} disabled={isScanning}>
+          {isScanning ? (
+            <ActivityIndicator size="small" color="#306ee8" />
+          ) : (
+            <MaterialIcons name="document-scanner" size={20} color="#306ee8" />
+          )}
+          <Text style={styles.scanBtnText}>{isScanning ? 'Scanning...' : 'Scan Text'}</Text>
         </TouchableOpacity>
 
         <View style={styles.toolbarIcons}>
