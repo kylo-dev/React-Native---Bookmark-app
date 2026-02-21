@@ -216,17 +216,18 @@ export default function SentenceDetailScreen() {
             {editingSentence ? (
               <TextInput 
                 key="quote-edit"
-                style={[styles.quoteText, styles.editQuoteInput]}
+                style={styles.quoteText}
                 multiline
                 value={editedSentenceText}
                 onChangeText={setEditedSentenceText}
                 onBlur={handleSentenceBlur}
                 autoFocus
+                scrollEnabled={false}
               />
             ) : (
               <TextInput 
                 key="quote-view"
-                style={[styles.quoteText, styles.editQuoteInput]}
+                style={styles.quoteText}
                 multiline
                 value={currentSentenceText}
                 editable={false}
@@ -280,17 +281,18 @@ export default function SentenceDetailScreen() {
                         {editingEventId === event.id ? (
                           <TextInput 
                             key={`event-edit-${event.id}`}
-                            style={[styles.eventContent, styles.editEventInput]}
+                            style={styles.eventContent}
                             multiline
                             value={editedEventContent}
                             onChangeText={setEditedEventContent}
                             onBlur={() => handleEventBlur(event)}
                             autoFocus
+                            scrollEnabled={false}
                           />
                         ) : (
                           <TextInput 
                             key={`event-view-${event.id}`}
-                            style={[styles.eventContent, styles.editEventInput]}
+                            style={styles.eventContent}
                             multiline
                             value={event.content}
                             editable={false}
@@ -442,14 +444,11 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     fontStyle: 'italic',
     textAlign: 'center',
-  },
-  editQuoteInput: {
     paddingTop: 0,
     paddingBottom: 0,
     paddingLeft: 0,
     paddingRight: 0,
     margin: 0,
-    textAlign: 'center',
   },
   timelineContainer: {
     paddingHorizontal: 16,
@@ -543,13 +542,10 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: '#1e293b',
     fontWeight: '500',
-    paddingRight: 8,
-  },
-  editEventInput: {
     paddingTop: 0,
     paddingBottom: 0,
     paddingLeft: 0,
-    paddingRight: 0,
+    paddingRight: 8,
     margin: 0,
     textAlignVertical: 'top',
   },
