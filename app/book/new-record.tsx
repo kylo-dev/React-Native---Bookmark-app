@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, Platform, Dimensions, Alert, Keyboard, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, Platform, Dimensions, Alert, Keyboard, ScrollView, ActivityIndicator, Modal } from 'react-native';
 import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -21,6 +21,8 @@ export default function NewRecordScreen() {
   const [isTagging, setIsTagging] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [isOcrModalVisible, setIsOcrModalVisible] = useState(false);
+  const [scannedFullText, setScannedFullText] = useState('');
 
   const handleScanText = async () => {
     try {
@@ -36,12 +38,12 @@ export default function NewRecordScreen() {
 
       if (!result.canceled) {
         setIsScanning(true);
-        // Simulate OCR API network delay
+        // Simulate OCR API network delay (Expo Go Sandbox Friendly)
         setTimeout(() => {
           setIsScanning(false);
-          const scannedText = "This is a dummy text extracted via OCR. The eternal return is a mysterious idea, and Nietzsche has often perplexed other philosophers with it.";
-          setText(prev => prev + (prev.length > 0 ? '\n\n' : '') + scannedText);
-          Alert.alert('Scan Complete', 'Text has been extracted successfully. (Dummy OCR)');
+          const scannedText = "This is a dummy text extracted via OCR.\n\n[Dummy Data]\nThe eternal return is a mysterious idea, and Nietzsche has often perplexed other philosophers with it. He is to be understood as having proposed that all things recur eternally exactly as they have before.\n\nPlease select and copy the sentences you want to remember from this full extracted text.";
+          setScannedFullText(scannedText);
+          setIsOcrModalVisible(true);
         }, 1500);
       }
     } catch (error) {
@@ -200,6 +202,44 @@ export default function NewRecordScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* OCR Result Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isOcrModalVisible}
+        onRequestClose={() => setIsOcrModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Scanned Text</Text>
+              <TouchableOpacity onPress={() => setIsOcrModalVisible(false)} style={styles.modalCloseBtn}>
+                <MaterialIcons name="close" size={24} color="#0f172a" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalNotice}>
+              <MaterialIcons name="info-outline" size={16} color="#306ee8" />
+              <Text style={styles.modalNoticeText}>Long press to select and copy the text you want.</Text>
+            </View>
+            <ScrollView style={styles.scannedTextContainer}>
+              <TextInput 
+                style={styles.scannedText} 
+                multiline={true} 
+                editable={false} 
+                value={scannedFullText} 
+              />
+            </ScrollView>
+            <TouchableOpacity 
+              style={styles.modalDoneBtn} 
+              activeOpacity={0.8}
+              onPress={() => setIsOcrModalVisible(false)}
+            >
+              <Text style={styles.modalDoneBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -387,5 +427,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     minWidth: 80,
     color: '#0f172a',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0f172a',
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 8,
+  },
+  modalNoticeText: {
+    color: '#1e3a8a',
+    fontSize: 13,
+    fontWeight: '500',
+    flex: 1,
+  },
+  scannedTextContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    maxHeight: 300,
+    marginBottom: 24,
+  },
+  scannedText: {
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#334155',
+  },
+  modalDoneBtn: {
+    backgroundColor: '#1754cf',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalDoneBtnText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   }
 });
