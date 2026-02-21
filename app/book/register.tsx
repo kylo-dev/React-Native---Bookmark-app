@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as ImagePicker from 'expo-image-picker';
 import { BOOKS } from '../../constants/dummy';
 
 export default function RegisterBookScreen() {
@@ -16,6 +17,55 @@ export default function RegisterBookScreen() {
 
   const [title, setTitle] = useState(existingBook?.title || '');
   const [author, setAuthor] = useState(existingBook?.author || '');
+  const [coverImage, setCoverImage] = useState<string | null>(existingBook?.coverUrl || null);
+
+  const handleImageSelection = async (type: 'camera' | 'gallery') => {
+    try {
+      let result;
+      if (type === 'camera') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission required', 'Camera permission is needed to take a photo.');
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          allowsEditing: true,
+          aspect: [2, 3],
+          quality: 0.8,
+        });
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission required', 'Gallery permission is needed to select a photo.');
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          allowsEditing: true,
+          aspect: [2, 3],
+          quality: 0.8,
+        });
+      }
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setCoverImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick an image.');
+      console.log(error);
+    }
+  };
+
+  const showImageOptions = () => {
+    Alert.alert(
+      'Upload Cover',
+      'Choose image source',
+      [
+        { text: 'Take Photo', onPress: () => handleImageSelection('camera') },
+        { text: 'Choose from Gallery', onPress: () => handleImageSelection('gallery') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
 
   const handleSave = () => {
     if (!title.trim() || !author.trim()) {
@@ -57,9 +107,9 @@ export default function RegisterBookScreen() {
           
           {/* Cover Image Upload Area */}
           <View style={styles.coverUploadSection}>
-            <TouchableOpacity style={styles.coverUploadBox} activeOpacity={0.8}>
-              {existingBook?.coverUrl ? (
-                <Image source={{ uri: existingBook.coverUrl }} style={{ width: '100%', height: '100%', borderRadius: 10 }} />
+            <TouchableOpacity style={styles.coverUploadBox} activeOpacity={0.8} onPress={showImageOptions}>
+              {coverImage ? (
+                <Image source={{ uri: coverImage }} style={{ width: '100%', height: '100%', borderRadius: 10 }} />
               ) : (
                 <>
                   <MaterialIcons name="add-a-photo" size={32} color="#94a3b8" />
