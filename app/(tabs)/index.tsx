@@ -63,7 +63,6 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.welcomeText}>WELCOME BACK</Text>
           <Text style={styles.headerTitle}>My Library</Text>
         </View>
         <TouchableOpacity style={styles.searchBtn}>

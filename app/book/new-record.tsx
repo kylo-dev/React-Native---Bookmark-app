@@ -160,23 +160,28 @@ export default function NewRecordScreen() {
               </View>
             ))}
             {isTagging && (
-              <TextInput
-                style={styles.tagInput}
-                placeholder="tag..."
-                placeholderTextColor="#94a3b8"
-                value={tagInput}
-                onChangeText={setTagInput}
-                onSubmitEditing={() => {
-                  if (tagInput.trim()) {
-                    setTags([...tags, tagInput.trim()]);
-                    setTagInput('');
-                  } else {
-                    setIsTagging(false);
-                  }
-                }}
-                autoFocus
-                returnKeyType="done"
-              />
+              <View style={styles.activeTagBadge}>
+                <Text style={styles.activeTagPrefix}>#</Text>
+                <TextInput
+                  style={styles.activeTagInput}
+                  placeholder="태그 입력"
+                  placeholderTextColor="#94a3b8"
+                  value={tagInput}
+                  onChangeText={setTagInput}
+                  onSubmitEditing={() => {
+                    if (tagInput.trim()) {
+                      setTags([...tags, tagInput.trim()]);
+                      setTagInput('');
+                    } else {
+                      setIsTagging(false);
+                    }
+                  }}
+                  autoFocus
+                  returnKeyType="done"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
             )}
           </View>
         )}
@@ -419,14 +424,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  tagInput: {
-    backgroundColor: '#f1f5f9',
+  activeTagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#306ee8',
+    gap: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#306ee8',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  activeTagPrefix: {
+    color: '#306ee8',
     fontSize: 14,
-    minWidth: 80,
+    fontWeight: 'bold',
+    marginRight: 2,
+  },
+  activeTagInput: {
+    fontSize: 14,
     color: '#0f172a',
+    minWidth: 60,
+    padding: 0,
+    margin: 0,
   },
   modalOverlay: {
     flex: 1,
