@@ -94,7 +94,12 @@ export default function BookDetailScreen() {
         {/* Sentences List */}
         <View style={styles.sentencesList}>
           {SENTENCES.map((sentence) => (
-            <TouchableOpacity key={sentence.id} style={styles.sentenceCard} activeOpacity={0.9}>
+            <TouchableOpacity 
+              key={sentence.id} 
+              style={styles.sentenceCard} 
+              activeOpacity={0.9}
+              onPress={() => router.push('/book/sentence')}
+            >
               <Text style={styles.sentenceText} numberOfLines={3}>
                 {sentence.text}
               </Text>
