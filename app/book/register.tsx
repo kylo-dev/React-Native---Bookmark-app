@@ -86,28 +86,14 @@ export default function RegisterBookScreen() {
               />
             </View>
 
-            {/* Grid for Pages & Status */}
-            <View style={styles.rowGrid}>
-              
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Total Pages</Text>
-                <TextInput 
-                  style={styles.textInput}
-                  placeholder="0"
-                  placeholderTextColor="#94a3b8"
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Status</Text>
-                {/* Simulated Select Dropdown */}
-                <TouchableOpacity style={styles.selectInput} activeOpacity={0.8}>
-                  <Text style={styles.selectText}>To Read</Text>
-                  <MaterialIcons name="expand-more" size={20} color="#94a3b8" />
-                </TouchableOpacity>
-              </View>
-
+            {/* Status */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Status</Text>
+              {/* Simulated Select Dropdown */}
+              <TouchableOpacity style={styles.selectInput} activeOpacity={0.8}>
+                <Text style={styles.selectText}>To Read</Text>
+                <MaterialIcons name="expand-more" size={20} color="#94a3b8" />
+              </TouchableOpacity>
             </View>
 
             {/* Initial Thoughts */}
@@ -223,10 +209,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: '#0f172a',
-  },
-  rowGrid: {
-    flexDirection: 'row',
-    gap: 16,
   },
   selectInput: {
     flexDirection: 'row',
