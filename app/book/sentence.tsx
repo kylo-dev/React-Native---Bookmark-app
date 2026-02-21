@@ -227,7 +227,8 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     paddingHorizontal: 24,
-    paddingVertical: 48,
+    paddingTop: 24, // move up
+    paddingBottom: 48, // keep same distance from bottom components
     alignItems: 'center',
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
@@ -397,11 +398,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 24,
+    borderRadius: 30, // scaled for taller input
     borderWidth: 1,
     borderColor: '#cbd5e1',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingLeft: 20,
+    paddingRight: 10,
+    paddingVertical: 5,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -416,18 +418,21 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    height: 40,
+    minHeight: 44, // match button height
+    lineHeight: 20,
     fontSize: 16,
     color: '#0f172a',
+    paddingVertical: 0, 
+    marginRight: 12,
+    textAlignVertical: 'center', // perfect centering for Android
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44, // slightly larger to match text layout
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#1754cf',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#1754cf',
