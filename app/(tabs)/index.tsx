@@ -31,11 +31,7 @@ export default function HomeScreen() {
       <View style={styles.coverWrapper}>
         <Image style={styles.coverImage} source={{ uri: item.coverUrl }} />
         <View style={styles.coverGradient} />
-        {item.hasFavorite && (
-          <View style={styles.favoriteBadge}>
-            <MaterialIcons name="favorite" size={16} color="#306ee8" />
-          </View>
-        )}
+
       </View>
       
       <View style={styles.cardInfo}>

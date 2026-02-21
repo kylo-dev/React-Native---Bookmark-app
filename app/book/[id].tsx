@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useState } from 'react';
 import { BOOKS, SENTENCES } from '../../constants/dummy';
 
 export default function BookDetailScreen() {
@@ -11,6 +12,14 @@ export default function BookDetailScreen() {
   const insets = useSafeAreaInsets();
   
   const book = BOOKS.find(b => b.id === id) || BOOKS[0];
+  const [favoriteSentences, setFavoriteSentences] = useState<Record<string, boolean>>({});
+
+  const toggleFavorite = (sentenceId: string) => {
+    setFavoriteSentences(prev => ({
+      ...prev,
+      [sentenceId]: !prev[sentenceId]
+    }));
+  };
 
   const handleMorePress = () => {
     Alert.alert(
@@ -108,6 +117,18 @@ export default function BookDetailScreen() {
                 activeOpacity={0.9}
                 onPress={() => router.push({ pathname: '/book/sentence', params: { bookId: id, sentenceId: sentence.id } })}
               >
+                <TouchableOpacity 
+                  style={styles.favoriteBadge}
+                  onPress={() => toggleFavorite(sentence.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <MaterialIcons 
+                    name={favoriteSentences[sentence.id] ? "favorite" : "favorite-border"} 
+                    size={20} 
+                    color={favoriteSentences[sentence.id] ? "#306ee8" : "#cbd5e1"} 
+                  />
+                </TouchableOpacity>
+
                 <Text style={styles.sentenceText} numberOfLines={3}>
                   {sentence.text}
                 </Text>
@@ -115,9 +136,11 @@ export default function BookDetailScreen() {
                 <View style={styles.sentenceFooter}>
                   <Text style={styles.dateText}>{sentence.date}</Text>
                   
-                  <View style={styles.commentBadge}>
-                    <MaterialIcons name="chat-bubble-outline" size={16} color="#94a3b8" />
-                    <Text style={styles.commentCount}>{sentence.commentsCount}</Text>
+                  <View style={styles.commentBadgeContainer}>
+                    <View style={styles.commentBadge}>
+                      <MaterialIcons name="chat-bubble-outline" size={16} color="#94a3b8" />
+                      <Text style={styles.commentCount}>{sentence.commentsCount}</Text>
+                    </View>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -274,6 +297,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#f1f5f9',
+    position: 'relative',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -286,12 +310,19 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  favoriteBadge: {
+    position: 'absolute',
+    top: 22, // aligned with first line of text (padding 20 + half of leading diff)
+    right: 20,
+    zIndex: 10,
+  },
   sentenceText: {
     fontSize: 16,
     lineHeight: 24,
     color: '#334155',
     fontStyle: 'italic',
     marginBottom: 16,
+    paddingRight: 32, // space for the absolute icon
   },
   sentenceFooter: {
     flexDirection: 'row',
@@ -301,6 +332,11 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: '#94a3b8',
+  },
+  commentBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   commentBadge: {
     flexDirection: 'row',
