@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { BOOKS } from '../../constants/dummy';
 
 const { width } = Dimensions.get('window');
 const COLUMN_GAP = 16;
@@ -11,8 +12,6 @@ const PADDING_HORIZONTAL = 16;
 const CARD_WIDTH = (width - PADDING_HORIZONTAL * 2 - COLUMN_GAP) / 2;
 
 const FILTER_OPTIONS = ['All Books', 'Reading', 'To Read', 'Finished'];
-
-import { BOOKS } from '../../constants/dummy';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -103,9 +102,18 @@ export default function HomeScreen() {
           renderItem={renderBookItem}
           keyExtractor={item => item.id}
           numColumns={2}
-          contentContainerStyle={styles.gridParams}
-          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={[styles.gridParams, filteredBooks.length === 0 && styles.emptyGridParams]}
+          columnWrapperStyle={filteredBooks.length > 0 ? styles.gridRow : undefined}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyStateContainer}>
+              <MaterialIcons name="library-books" size={64} color="#cbd5e1" />
+              <Text style={styles.emptyStateTitle}>아직 등록된 책이 없습니다</Text>
+              <Text style={styles.emptyStateDesc}>
+                + 버튼을 눌러 새로운 책을 추가해보세요!
+              </Text>
+            </View>
+          }
         />
       </View>
 
@@ -299,5 +307,26 @@ const styles = StyleSheet.create({
         elevation: 8,
       },
     }),
-  }
+  },
+  emptyGridParams: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#64748b',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateDesc: {
+    fontSize: 14,
+    color: '#94a3b8',
+    textAlign: 'center',
+  },
 });

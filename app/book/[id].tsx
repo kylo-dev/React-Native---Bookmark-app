@@ -1,11 +1,8 @@
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-
-const { width } = Dimensions.get('window');
-
 import { BOOKS, SENTENCES } from '../../constants/dummy';
 
 export default function BookDetailScreen() {
@@ -70,27 +67,37 @@ export default function BookDetailScreen() {
 
         {/* Sentences List */}
         <View style={styles.sentencesList}>
-          {SENTENCES.map((sentence) => (
-            <TouchableOpacity 
-              key={sentence.id} 
-              style={styles.sentenceCard} 
-              activeOpacity={0.9}
-              onPress={() => router.push({ pathname: '/book/sentence', params: { bookId: id, sentenceId: sentence.id } })}
-            >
-              <Text style={styles.sentenceText} numberOfLines={3}>
-                {sentence.text}
+          {SENTENCES.length === 0 ? (
+            <View style={styles.emptyStateContainer}>
+              <MaterialIcons name="format-quote" size={48} color="#cbd5e1" />
+              <Text style={styles.emptyStateTitle}>아직 기록된 문장이 없습니다</Text>
+              <Text style={styles.emptyStateDesc}>
+                아래 버튼을 눌러 기억하고 싶은 문장을 남겨보세요!
               </Text>
-              
-              <View style={styles.sentenceFooter}>
-                <Text style={styles.dateText}>{sentence.date}</Text>
+            </View>
+          ) : (
+            SENTENCES.map((sentence) => (
+              <TouchableOpacity 
+                key={sentence.id} 
+                style={styles.sentenceCard} 
+                activeOpacity={0.9}
+                onPress={() => router.push({ pathname: '/book/sentence', params: { bookId: id, sentenceId: sentence.id } })}
+              >
+                <Text style={styles.sentenceText} numberOfLines={3}>
+                  {sentence.text}
+                </Text>
                 
-                <View style={styles.commentBadge}>
-                  <MaterialIcons name="chat-bubble-outline" size={16} color="#94a3b8" />
-                  <Text style={styles.commentCount}>{sentence.commentsCount}</Text>
+                <View style={styles.sentenceFooter}>
+                  <Text style={styles.dateText}>{sentence.date}</Text>
+                  
+                  <View style={styles.commentBadge}>
+                    <MaterialIcons name="chat-bubble-outline" size={16} color="#94a3b8" />
+                    <Text style={styles.commentCount}>{sentence.commentsCount}</Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))
+          )}
           
           {/* Spacer for bottom action button */}
           <View style={{ height: 100 }} />
@@ -312,5 +319,22 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
-  }
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#64748b',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateDesc: {
+    fontSize: 14,
+    color: '#94a3b8',
+    textAlign: 'center',
+  },
 });

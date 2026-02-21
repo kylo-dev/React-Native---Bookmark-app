@@ -87,52 +87,63 @@ export default function SentenceDetailScreen() {
 
         {/* Timeline Section */}
         <View style={styles.timelineContainer}>
-          {/* Timeline Line */}
-          <View style={styles.timelineLine} />
+          {TIMELINE_EVENTS.length === 0 ? (
+            <View style={[styles.emptyStateContainer, { paddingTop: 40 }]}>
+              <MaterialIcons name="chat" size={48} color="#cbd5e1" />
+              <Text style={styles.emptyStateTitle}>아직 기록된 생각이 없습니다</Text>
+              <Text style={styles.emptyStateDesc}>
+                아래 입력창을 통해 문장에 대한 내 생각을 남겨보세요!
+              </Text>
+            </View>
+          ) : (
+            <>
+              {/* Timeline Line */}
+              <View style={styles.timelineLine} />
 
-          {/* Timeline Events */}
-          {TIMELINE_EVENTS.map((event, index) => (
-            <View key={event.id} style={styles.timelineRow}>
-              {/* Timeline Node */}
-              <View style={styles.timelineNodeContainer}>
-                <View style={styles.timelineNode}>
-                  <MaterialIcons name={event.icon as any} size={16} color="#64748b" />
+              {/* Timeline Events */}
+              {TIMELINE_EVENTS.map((event, index) => (
+                <View key={event.id} style={styles.timelineRow}>
+                  {/* Timeline Node */}
+                  <View style={styles.timelineNodeContainer}>
+                    <View style={styles.timelineNode}>
+                      <MaterialIcons name={event.icon as any} size={16} color="#64748b" />
+                    </View>
+                  </View>
+
+                  {/* Event Card */}
+                  <View style={styles.eventCardContainer}>
+                    {/* Pointer Arrow */}
+                    <View style={styles.eventCardPointer} />
+                    
+                    <View style={styles.eventCard}>
+                      <Text style={styles.eventContent}>{event.content}</Text>
+                      
+                      <View style={styles.eventFooter}>
+                        <Text style={styles.eventDate}>{event.date}</Text>
+                        <View style={styles.eventDot} />
+                        <Text style={styles.eventDate}>{event.time}</Text>
+                      </View>
+                    </View>
+                  </View>
                 </View>
-              </View>
+              ))}
 
-              {/* Event Card */}
-              <View style={styles.eventCardContainer}>
-                {/* Pointer Arrow */}
-                <View style={styles.eventCardPointer} />
-                
-                <View style={styles.eventCard}>
-                  <Text style={styles.eventContent}>{event.content}</Text>
-                  
-                  <View style={styles.eventFooter}>
-                    <Text style={styles.eventDate}>{event.date}</Text>
-                    <View style={styles.eventDot} />
-                    <Text style={styles.eventDate}>{event.time}</Text>
+              {/* End Node */}
+              <View style={styles.timelineRow}>
+                <View style={styles.timelineNodeContainer}>
+                  <View style={styles.timelineEndNode}>
+                    <MaterialIcons name="edit-note" size={18} color="#1754cf" />
+                  </View>
+                </View>
+
+                <View style={styles.eventCardContainer}>
+                  <View style={styles.emptyCard}>
+                    <Text style={styles.emptyCardText}>Your thoughts continue here...</Text>
                   </View>
                 </View>
               </View>
-            </View>
-          ))}
-
-          {/* End Node */}
-          <View style={styles.timelineRow}>
-            <View style={styles.timelineNodeContainer}>
-              <View style={styles.timelineEndNode}>
-                <MaterialIcons name="edit-note" size={18} color="#1754cf" />
-              </View>
-            </View>
-
-            <View style={styles.eventCardContainer}>
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyCardText}>Your thoughts continue here...</Text>
-              </View>
-            </View>
-          </View>
-
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -404,5 +415,23 @@ const styles = StyleSheet.create({
         elevation: 4,
       },
     }),
-  }
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#64748b',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateDesc: {
+    fontSize: 14,
+    color: '#94a3b8',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
 });
