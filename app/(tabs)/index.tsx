@@ -155,7 +155,11 @@ export default function HomeScreen() {
       </View>
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+      <TouchableOpacity 
+        style={styles.fab} 
+        activeOpacity={0.8}
+        onPress={() => router.push('/book/register')}
+      >
         <MaterialIcons name="add" size={28} color="#ffffff" />
       </TouchableOpacity>
     </View>
