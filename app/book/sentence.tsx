@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { SENTENCES } from '../../constants/dummy';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -27,7 +28,10 @@ const TIMELINE_EVENTS = [
 
 export default function SentenceDetailScreen() {
   const router = useRouter();
+  const { sentenceId } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
+
+  const sentence = SENTENCES.find(s => s.id === sentenceId) || SENTENCES[0];
 
   return (
     <KeyboardAvoidingView 
@@ -63,7 +67,7 @@ export default function SentenceDetailScreen() {
           <View style={styles.quoteWrapper}>
             <MaterialIcons name="format-quote" size={48} color="rgba(23, 84, 207, 0.2)" style={styles.quoteIconLeft} />
             <Text style={styles.quoteText}>
-              Everything is repeated in a circle. Each joy and each pain, each thought and sigh, and everything unspeakably small or great in your life must come to you again.
+              {sentence.text}
             </Text>
             <MaterialIcons name="format-quote" size={48} color="rgba(23, 84, 207, 0.2)" style={styles.quoteIconRight} />
           </View>

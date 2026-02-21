@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { BOOKS } from '../../constants/dummy';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -8,7 +9,10 @@ const { width } = Dimensions.get('window');
 
 export default function NewRecordScreen() {
   const router = useRouter();
+  const { bookId } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
+
+  const book = BOOKS.find(b => b.id === bookId) || BOOKS[0];
 
   return (
     <KeyboardAvoidingView 
@@ -39,13 +43,13 @@ export default function NewRecordScreen() {
         <View style={styles.bookInfoCard}>
           <View style={styles.thumbnailWrapper}>
             <Image 
-              source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAs4kV2WT8u8ThnSzJbZBqv7YySGBabsumipKS1XIn6aJWv8iu3lNS1xV5hf0vUJw07wJEhWUzRYtVbFfDUDzJ5PMai4NS5Ydaz2NYe8KW51eLDiCMaFRUpCYCZifeDB-zKTUdbynkVUHHtlE2JyMQZcf75VOW18iRnR_QUhJf1WB7aJXvbesdBwAxOociYzOKjV24ZzC1DN2ZmSDRLLbt1jB5-FoF6-OtjF5qQxcpAxM_UkbaLiFi8JToIOj7GiaLP3YemSA8Fulg' }} 
+              source={{ uri: book.coverUrl }} 
               style={styles.thumbnail} 
             />
           </View>
           <View style={styles.bookDetails}>
-            <Text style={styles.bookTitle} numberOfLines={1}>상실의 시대</Text>
-            <Text style={styles.bookAuthor} numberOfLines={1}>무라카미 하루키</Text>
+            <Text style={styles.bookTitle} numberOfLines={1}>{book.title}</Text>
+            <Text style={styles.bookAuthor} numberOfLines={1}>{book.author}</Text>
           </View>
         </View>
 

@@ -6,37 +6,14 @@ import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
 
-const SENTENCES = [
-  {
-    id: '1',
-    text: '"Only the dead stay seventeen forever. The rest of us keep getting older."',
-    date: '2023.10.27',
-    commentsCount: 3,
-  },
-  {
-    id: '2',
-    text: '"If you only read the books that everyone else is reading, you can only think what everyone else is thinking."',
-    date: '2023.10.15',
-    commentsCount: 1,
-  },
-  {
-    id: '3',
-    text: '"Don\'t feel sorry for yourself. Only assholes do that."',
-    date: '2023.09.22',
-    commentsCount: 5,
-  },
-  {
-    id: '4',
-    text: '"What happens when people open their hearts? They get better."',
-    date: '2023.09.10',
-    commentsCount: 0,
-  }
-];
+import { BOOKS, SENTENCES } from '../../constants/dummy';
 
 export default function BookDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  
+  const book = BOOKS.find(b => b.id === id) || BOOKS[0];
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -66,19 +43,19 @@ export default function BookDetailScreen() {
           <View style={styles.coverShadow}>
             <View style={styles.coverWrapper}>
               <Image 
-                source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAs4kV2WT8u8ThnSzJbZBqv7YySGBabsumipKS1XIn6aJWv8iu3lNS1xV5hf0vUJw07wJEhWUzRYtVbFfDUDzJ5PMai4NS5Ydaz2NYe8KW51eLDiCMaFRUpCYCZifeDB-zKTUdbynkVUHHtlE2JyMQZcf75VOW18iRnR_QUhJf1WB7aJXvbesdBwAxOociYzOKjV24ZzC1DN2ZmSDRLLbt1jB5-FoF6-OtjF5qQxcpAxM_UkbaLiFi8JToIOj7GiaLP3YemSA8Fulg' }} 
+                source={{ uri: book.coverUrl }} 
                 style={styles.coverImage} 
               />
               <View style={styles.coverGradient} />
             </View>
           </View>
           
-          <Text style={styles.title}>상실의 시대</Text>
-          <Text style={styles.author}>무라카미 하루키</Text>
+          <Text style={styles.title}>{book.title}</Text>
+          <Text style={styles.author}>{book.author}</Text>
           
           <View style={styles.statusBadge}>
             <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Reading</Text>
+            <Text style={styles.statusText}>{book.status || 'To Read'}</Text>
           </View>
         </View>
 
@@ -98,7 +75,7 @@ export default function BookDetailScreen() {
               key={sentence.id} 
               style={styles.sentenceCard} 
               activeOpacity={0.9}
-              onPress={() => router.push('/book/sentence')}
+              onPress={() => router.push({ pathname: '/book/sentence', params: { bookId: id, sentenceId: sentence.id } })}
             >
               <Text style={styles.sentenceText} numberOfLines={3}>
                 {sentence.text}
@@ -125,7 +102,7 @@ export default function BookDetailScreen() {
         <TouchableOpacity 
           style={styles.recordButton} 
           activeOpacity={0.8}
-          onPress={() => router.push('/book/new-record')}
+          onPress={() => router.push({ pathname: '/book/new-record', params: { bookId: id } })}
         >
           <MaterialIcons name="edit-note" size={24} color="#ffffff" />
           <Text style={styles.recordButtonText}>Record New Sentence</Text>
