@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, Alert } from 'react-native';
+import { useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { BOOKS } from '../../constants/dummy';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -13,6 +14,17 @@ export default function NewRecordScreen() {
   const insets = useSafeAreaInsets();
 
   const book = BOOKS.find(b => b.id === bookId) || BOOKS[0];
+  const [text, setText] = useState('');
+
+  const handleSave = () => {
+    if (!text.trim()) {
+      Alert.alert('Required', 'Please enter a sentence to remember.');
+      return;
+    }
+    Alert.alert('Success', 'Sentence recorded! (Dummy)', [
+      { text: 'OK', onPress: () => router.back() }
+    ]);
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -32,7 +44,7 @@ export default function NewRecordScreen() {
         
         <Text style={styles.headerTitle}>New Record</Text>
         
-        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.7} onPress={handleSave}>
           <Text style={styles.saveBtnText}>Save</Text>
         </TouchableOpacity>
       </View>
@@ -62,6 +74,8 @@ export default function NewRecordScreen() {
             multiline
             autoFocus
             textAlignVertical="top"
+            value={text}
+            onChangeText={setText}
           />
           <Text style={styles.todayText}>Today</Text>
         </View>

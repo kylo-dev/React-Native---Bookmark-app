@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, Alert } from 'react-native';
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +8,19 @@ import { StatusBar } from 'expo-status-bar';
 export default function RegisterBookScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+
+  const handleSave = () => {
+    if (!title.trim() || !author.trim()) {
+      Alert.alert('Required Fields', 'Please enter both book title and author.');
+      return;
+    }
+    Alert.alert('Success', 'Book registered! (Dummy)', [
+      { text: 'OK', onPress: () => router.back() }
+    ]);
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -55,6 +69,8 @@ export default function RegisterBookScreen() {
                 style={styles.textInput}
                 placeholder="e.g. The Midnight Library"
                 placeholderTextColor="#94a3b8"
+                value={title}
+                onChangeText={setTitle}
               />
             </View>
 
@@ -65,6 +81,8 @@ export default function RegisterBookScreen() {
                 style={styles.textInput}
                 placeholder="e.g. Matt Haig"
                 placeholderTextColor="#94a3b8"
+                value={author}
+                onChangeText={setAuthor}
               />
             </View>
 
@@ -110,9 +128,8 @@ export default function RegisterBookScreen() {
         </View>
       </ScrollView>
 
-      {/* Fixed Bottom Button */}
       <View style={[styles.bottomContainer, { paddingBottom: (insets?.bottom ?? 0) || 24 }]}>
-        <TouchableOpacity style={styles.saveButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.saveButton} activeOpacity={0.8} onPress={handleSave}>
           <MaterialIcons name="save" size={20} color="#ffffff" />
           <Text style={styles.saveButtonText}>Save to Library</Text>
         </TouchableOpacity>

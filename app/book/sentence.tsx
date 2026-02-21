@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, Alert } from 'react-native';
+import { useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SENTENCES } from '../../constants/dummy';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -32,6 +33,17 @@ export default function SentenceDetailScreen() {
   const insets = useSafeAreaInsets();
 
   const sentence = SENTENCES.find(s => s.id === sentenceId) || SENTENCES[0];
+  const [thought, setThought] = useState('');
+
+  const handleSend = () => {
+    if (!thought.trim()) {
+      Alert.alert('Empty Thought', 'Please type something before sending.');
+      return;
+    }
+    Alert.alert('Success', 'Thought added! (Dummy)', [
+      { text: 'OK', onPress: () => setThought('') }
+    ]);
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -131,8 +143,10 @@ export default function SentenceDetailScreen() {
             style={styles.textInput}
             placeholder="Add a thought..."
             placeholderTextColor="#94a3b8"
+            value={thought}
+            onChangeText={setThought}
           />
-          <TouchableOpacity style={styles.sendButton} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.sendButton} activeOpacity={0.8} onPress={handleSend}>
             <MaterialIcons name="send" size={18} color="#ffffff" style={{ transform: [{ rotate: '-45deg' }, { translateX: 2 }, { translateY: -2 }] }} />
           </TouchableOpacity>
         </View>
