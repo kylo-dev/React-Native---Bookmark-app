@@ -18,7 +18,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="book/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="book/new-record" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="book/sentence" options={{ headerShown: false }} />
+        <Stack.Screen name="book/quote" options={{ headerShown: false }} />
         <Stack.Screen name="book/register" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
