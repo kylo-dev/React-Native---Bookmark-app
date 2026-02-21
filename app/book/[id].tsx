@@ -117,7 +117,11 @@ export default function BookDetailScreen() {
 
       {/* Fixed Bottom Action */}
       <View style={[styles.bottomActionContainer, { paddingBottom: insets.bottom || 24 }]}>
-        <TouchableOpacity style={styles.recordButton} activeOpacity={0.8}>
+        <TouchableOpacity 
+          style={styles.recordButton} 
+          activeOpacity={0.8}
+          onPress={() => router.push('/book/new-record')}
+        >
           <MaterialIcons name="edit-note" size={24} color="#ffffff" />
           <Text style={styles.recordButtonText}>Record New Sentence</Text>
         </TouchableOpacity>
