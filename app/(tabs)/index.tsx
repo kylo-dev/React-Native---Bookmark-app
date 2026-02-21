@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList, Dimensions, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -64,10 +65,15 @@ const BOOKS = [
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('All Books');
 
   const renderBookItem = ({ item }: { item: typeof BOOKS[0] }) => (
-    <View style={styles.cardContainer}>
+    <TouchableOpacity 
+      style={styles.cardContainer} 
+      activeOpacity={0.8}
+      onPress={() => router.push({ pathname: '/book/[id]', params: { id: item.id } })}
+    >
       <View style={styles.coverWrapper}>
         <Image style={styles.coverImage} source={{ uri: item.coverUrl }} />
         <View style={styles.coverGradient} />
@@ -93,7 +99,7 @@ export default function HomeScreen() {
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
