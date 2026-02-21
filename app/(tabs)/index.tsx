@@ -212,17 +212,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#e2e8f0',
     marginBottom: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   coverImage: {
     width: '100%',

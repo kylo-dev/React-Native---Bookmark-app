@@ -129,7 +129,6 @@ export default function RegisterBookScreen() {
               <TextInput 
                 style={styles.textInput}
                 placeholder="e.g. The Midnight Library"
-                placeholderTextColor="#94a3b8"
                 value={title}
                 onChangeText={setTitle}
               />
@@ -141,7 +140,6 @@ export default function RegisterBookScreen() {
               <TextInput 
                 style={styles.textInput}
                 placeholder="e.g. Matt Haig"
-                placeholderTextColor="#94a3b8"
                 value={author}
                 onChangeText={setAuthor}
               />
@@ -163,7 +161,6 @@ export default function RegisterBookScreen() {
               <TextInput 
                 style={[styles.textInput, styles.textArea]}
                 placeholder="Why do you want to read this?"
-                placeholderTextColor="#94a3b8"
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
@@ -264,7 +261,9 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   textInput: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -275,7 +274,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,

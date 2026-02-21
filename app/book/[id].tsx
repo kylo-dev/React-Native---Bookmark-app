@@ -77,7 +77,6 @@ export default function BookDetailScreen() {
                 source={{ uri: book.coverUrl }} 
                 style={styles.coverImage} 
               />
-              <View style={styles.coverGradient} />
             </View>
           </View>
           
@@ -200,17 +199,6 @@ const styles = StyleSheet.create({
   },
   coverShadow: {
     marginBottom: 24,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.25,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
   },
   coverWrapper: {
     width: 160,
@@ -222,11 +210,6 @@ const styles = StyleSheet.create({
   coverImage: {
     width: '100%',
     height: '100%',
-    opacity: 0.9,
-  },
-  coverGradient: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.1)',
   },
   title: {
     fontSize: 24,

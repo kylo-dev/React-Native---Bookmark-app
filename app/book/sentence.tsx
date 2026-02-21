@@ -36,6 +36,56 @@ export default function SentenceDetailScreen() {
   const [thought, setThought] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
+  const [currentSentenceText, setCurrentSentenceText] = useState(sentence.text);
+  const [editingSentence, setEditingSentence] = useState(false);
+  const [editedSentenceText, setEditedSentenceText] = useState('');
+
+  const [events, setEvents] = useState(TIMELINE_EVENTS);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [editedEventContent, setEditedEventContent] = useState('');
+
+  const startEditingSentence = () => {
+    setEditedSentenceText(currentSentenceText);
+    setEditingSentence(true);
+  };
+
+  const handleSaveSentence = () => {
+    if (!editedSentenceText.trim()) {
+      Alert.alert('Error', 'Sentence cannot be empty.');
+      return;
+    }
+    Alert.alert('Success', 'Sentence updated! (Dummy)', [
+      { 
+        text: 'OK', 
+        onPress: () => {
+          setCurrentSentenceText(editedSentenceText);
+          setEditingSentence(false);
+        }
+      }
+    ]);
+  };
+
+  const startEditingEvent = (event: typeof TIMELINE_EVENTS[0]) => {
+    setEditedEventContent(event.content);
+    setEditingEventId(event.id);
+  };
+
+  const handleSaveEvent = (id: string) => {
+    if (!editedEventContent.trim()) {
+      Alert.alert('Error', 'Thought cannot be empty.');
+      return;
+    }
+    Alert.alert('Success', 'Thought updated! (Dummy)', [
+      { 
+        text: 'OK', 
+        onPress: () => {
+          setEvents(events.map(e => e.id === id ? { ...e, content: editedEventContent } : e));
+          setEditingEventId(null);
+        }
+      }
+    ]);
+  };
+
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -102,20 +152,42 @@ export default function SentenceDetailScreen() {
       >
         {/* Quote Hero Section */}
         <View style={styles.heroSection}>
-          <Text style={styles.pageNumberText}>PAGE 112</Text>
+          <View style={styles.heroHeader}>
+            <Text style={styles.pageNumberText}>PAGE 112</Text>
+            {editingSentence ? (
+              <TouchableOpacity style={styles.editActionBtn} onPress={handleSaveSentence}>
+                <MaterialIcons name="check" size={20} color="#1754cf" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.editActionBtn} onPress={startEditingSentence}>
+                <MaterialIcons name="edit" size={18} color="#94a3b8" />
+              </TouchableOpacity>
+            )}
+          </View>
           
           <View style={styles.quoteWrapper}>
             <MaterialIcons name="format-quote" size={48} color="rgba(23, 84, 207, 0.2)" style={styles.quoteIconLeft} />
-            <Text style={styles.quoteText}>
-              {sentence.text}
-            </Text>
+            {editingSentence ? (
+              <TextInput 
+                style={[styles.quoteText, styles.editQuoteInput]}
+                multiline
+                value={editedSentenceText}
+                onChangeText={setEditedSentenceText}
+                onBlur={() => setEditingSentence(false)}
+                autoFocus
+              />
+            ) : (
+              <Text style={styles.quoteText}>
+                {currentSentenceText}
+              </Text>
+            )}
             <MaterialIcons name="format-quote" size={48} color="rgba(23, 84, 207, 0.2)" style={styles.quoteIconRight} />
           </View>
         </View>
 
         {/* Timeline Section */}
         <View style={styles.timelineContainer}>
-          {TIMELINE_EVENTS.length === 0 ? (
+          {events.length === 0 ? (
             <View style={[styles.emptyStateContainer, { paddingTop: 40 }]}>
               <MaterialIcons name="chat" size={48} color="#cbd5e1" />
               <Text style={styles.emptyStateTitle}>아직 기록된 생각이 없습니다</Text>
@@ -129,7 +201,7 @@ export default function SentenceDetailScreen() {
               <View style={styles.timelineLine} />
 
               {/* Timeline Events */}
-              {TIMELINE_EVENTS.map((event, index) => (
+              {events.map((event, index) => (
                 <View key={event.id} style={styles.timelineRow}>
                   {/* Timeline Node */}
                   <View style={styles.timelineNodeContainer}>
@@ -144,7 +216,32 @@ export default function SentenceDetailScreen() {
                     <View style={styles.eventCardPointer} />
                     
                     <View style={styles.eventCard}>
-                      <Text style={styles.eventContent}>{event.content}</Text>
+                      <View style={styles.eventHeader}>
+                        {editingEventId === event.id ? (
+                          <TextInput 
+                            style={[styles.eventContent, styles.editEventInput]}
+                            multiline
+                            value={editedEventContent}
+                            onChangeText={setEditedEventContent}
+                            onBlur={() => setEditingEventId(null)}
+                            autoFocus
+                          />
+                        ) : (
+                          <Text style={styles.eventContent}>{event.content}</Text>
+                        )}
+                        
+                        <View style={styles.eventEditBtn}>
+                          {editingEventId === event.id ? (
+                            <TouchableOpacity onPress={() => handleSaveEvent(event.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                              <MaterialIcons name="check" size={18} color="#1754cf" />
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity onPress={() => startEditingEvent(event)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                              <MaterialIcons name="edit" size={16} color="#94a3b8" />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
                       
                       <View style={styles.eventFooter}>
                         <Text style={styles.eventDate}>{event.date}</Text>
@@ -234,12 +331,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(226, 232, 240, 0.6)',
   },
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    position: 'relative',
+    marginBottom: 16,
+  },
+  editActionBtn: {
+    position: 'absolute',
+    right: 0,
+    top: -4,
+    padding: 4,
+  },
   pageNumberText: {
     fontSize: 12,
     fontWeight: 'bold',
     color: '#94a3b8',
     letterSpacing: 2,
-    marginBottom: 16,
   },
   quoteWrapper: {
     paddingHorizontal: 16,
@@ -263,6 +373,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1e293b',
     fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  editQuoteInput: {
+    padding: 0,
+    marginVertical: -2,
+    minHeight: 36,
     textAlign: 'center',
   },
   timelineContainer: {
@@ -346,11 +462,25 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  eventHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
   eventContent: {
+    flex: 1,
     fontSize: 16,
     lineHeight: 24,
     color: '#1e293b',
     fontWeight: '500',
+    paddingRight: 8,
+  },
+  editEventInput: {
+    padding: 0,
+  },
+  eventEditBtn: {
+    paddingLeft: 4,
+    paddingTop: 2,
   },
   eventFooter: {
     flexDirection: 'row',
