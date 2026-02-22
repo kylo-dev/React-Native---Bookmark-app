@@ -151,9 +151,8 @@ export default function QuoteDetailScreen() {
       'Record Options',
       'Choose an action',
       [
-        { text: 'Edit Quote', onPress: () => Alert.alert('Edit feature coming soon! (Dummy)') },
-        { text: 'Delete Quote', onPress: () => Alert.alert('Deleted! (Dummy)', '', [{ text: 'OK', onPress: () => router.back() }]), style: 'destructive' },
-        { text: 'Cancel', style: 'cancel' }
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete Quote', onPress: () => Alert.alert('Deleted! (Dummy)', '', [{ text: 'OK', onPress: () => router.back() }]), style: 'destructive' }
       ]
     );
   };
