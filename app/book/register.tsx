@@ -25,6 +25,11 @@ import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import { apiBooks } from '../../features/book/api/api';
 import { uploadBookCover } from '@/lib/storage';
+import {
+    BOOK_STATUS_OPTIONS,
+    getStatusLabel,
+    getStatusOptionsForCreate,
+} from '@/constants/book-status';
 
 export default function RegisterBookScreen() {
     const router = useRouter();
@@ -107,14 +112,7 @@ export default function RegisterBookScreen() {
 
     const showImageOptions = () => imageSheetRef.current?.present();
 
-    const STATUS_OPTIONS: { value: string; label: string }[] = [
-        { value: 'TO_READ', label: '읽을 예정' },
-        { value: 'READING', label: '읽는 중' },
-        { value: 'FINISHED', label: '완료' },
-        { value: 'CANCELLED', label: '취소함' },
-    ];
-
-    const statusOptionsToShow = isEditMode ? STATUS_OPTIONS : STATUS_OPTIONS.filter((o) => o.value !== 'CANCELLED');
+    const statusOptionsToShow = isEditMode ? BOOK_STATUS_OPTIONS : getStatusOptionsForCreate();
 
     const handleSave = async () => {
         if (!title.trim() || !author.trim()) {
@@ -127,12 +125,17 @@ export default function RegisterBookScreen() {
             let finalCoverUrl: string | null = null;
 
             if (coverImage) {
-                const uploadedUrl = await uploadBookCover(coverImage);
-                if (!uploadedUrl) {
-                    Alert.alert('오류', '이미지 업로드에 실패했습니다.');
-                    return;
+                const isExistingUrl = coverImage.startsWith('http://') || coverImage.startsWith('https://');
+                if (isExistingUrl) {
+                    finalCoverUrl = coverImage;
+                } else {
+                    const uploadedUrl = await uploadBookCover(coverImage);
+                    if (!uploadedUrl) {
+                        Alert.alert('오류', '이미지 업로드에 실패했습니다.');
+                        return;
+                    }
+                    finalCoverUrl = uploadedUrl;
                 }
-                finalCoverUrl = uploadedUrl;
             }
 
             const payload = {
@@ -263,7 +266,7 @@ export default function RegisterBookScreen() {
                                 onPress={showStatusOptions}
                             >
                                 <Text style={styles.selectText}>
-                                    {STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status}
+                                    {getStatusLabel(status)}
                                 </Text>
                                 <MaterialIcons name="expand-more" size={20} color="#94a3b8" />
                             </TouchableOpacity>

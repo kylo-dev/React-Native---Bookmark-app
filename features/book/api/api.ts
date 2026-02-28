@@ -9,10 +9,8 @@ export const apiBooks = {
   getBooks: async (statusFilter?: string) => {
     let query = supabase.from('books').select(`*, quotes(count)`);
 
-    if (statusFilter && statusFilter !== 'All Books') {
-      const dbStatus = statusFilter === 'Reading' ? 'READING' :
-                       statusFilter === 'Finished' ? 'FINISHED' : 'CANCELLED';
-      query = query.eq('status', dbStatus);
+    if (statusFilter && statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });

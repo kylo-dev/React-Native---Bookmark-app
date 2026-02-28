@@ -1,11 +1,18 @@
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import {
+    BottomSheetModal,
+    BottomSheetView,
+    BottomSheetBackdrop,
+    type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet';
 import { apiBooks } from '../../features/book/api/api';
 import { apiQuotes } from '../../features/quote/api/api';
+import { BOOK_STATUS_OPTIONS, getStatusOption } from '@/constants/book-status';
 
 export default function BookDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -16,6 +23,16 @@ export default function BookDetailScreen() {
 
     const [book, setBook] = useState<any>(null);
     const [quotes, setQuotes] = useState<any[]>([]);
+    const optionsSheetRef = useRef<BottomSheetModal>(null);
+    const statusSheetRef = useRef<BottomSheetModal>(null);
+
+    const renderBackdrop = useCallback(
+        (props: BottomSheetBackdropProps) => (
+            <BottomSheetBackdrop {...props} disappearsOnIndex={-1} opacity={0.5} pressBehavior="close" />
+        ),
+        [],
+    );
+
 
     const fetchData = async () => {
         if (!bookIdStr) return;
@@ -45,27 +62,7 @@ export default function BookDetailScreen() {
         }
     };
 
-    const handleMorePress = () => {
-        Alert.alert('Book Options', 'Choose an action', [
-            {
-                text: 'Edit Book Info',
-                onPress: () => router.push({ pathname: '/book/register', params: { bookId: bookIdStr } }),
-            },
-            {
-                text: 'Delete Book',
-                onPress: async () => {
-                    try {
-                        await apiBooks.deleteBook(Number(bookIdStr));
-                        router.back();
-                    } catch (e) {
-                        console.error('Delete book failed', e);
-                    }
-                },
-                style: 'destructive',
-            },
-            { text: 'Cancel', style: 'cancel' },
-        ]);
-    };
+    const handleMorePress = () => optionsSheetRef.current?.present();
 
     const changeStatus = async (status: string) => {
         try {
@@ -76,14 +73,7 @@ export default function BookDetailScreen() {
         }
     };
 
-    const handleStatusPress = () => {
-        Alert.alert('Change Status', 'Select book status', [
-            { text: 'Reading', onPress: () => changeStatus('READING') },
-            { text: 'Finished', onPress: () => changeStatus('FINISHED') },
-            { text: 'Cancelled', onPress: () => changeStatus('CANCELLED') },
-            { text: 'Cancel', style: 'cancel' },
-        ]);
-    };
+    const handleStatusPress = () => statusSheetRef.current?.present();
 
     if (!book)
         return (
@@ -123,16 +113,20 @@ export default function BookDetailScreen() {
                     <Text style={styles.title}>{book.title}</Text>
                     <Text style={styles.author}>{book.author}</Text>
 
-                    <TouchableOpacity style={styles.statusBadge} activeOpacity={0.8} onPress={handleStatusPress}>
-                        <View style={styles.statusDot} />
-                        <Text style={styles.statusText}>
-                            {book.status === 'TO_READ'
-                                ? 'To Read'
-                                : book.status === 'READING'
-                                  ? 'Reading'
-                                  : book.status === 'FINISHED'
-                                    ? 'Finished'
-                                    : 'Cancelled'}
+                    <TouchableOpacity
+                        style={[
+                            styles.statusBadge,
+                            {
+                                backgroundColor: getStatusOption(book.status).bgColor,
+                                borderColor: getStatusOption(book.status).borderColor,
+                            },
+                        ]}
+                        activeOpacity={0.8}
+                        onPress={handleStatusPress}
+                    >
+                        <View style={[styles.statusDot, { backgroundColor: getStatusOption(book.status).color }]} />
+                        <Text style={[styles.statusText, { color: getStatusOption(book.status).color }]}>
+                            {getStatusOption(book.status).label}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -203,6 +197,86 @@ export default function BookDetailScreen() {
                     <View style={{ height: 100 }} />
                 </View>
             </ScrollView>
+
+            {/* Book Options Bottom Sheet */}
+            <BottomSheetModal ref={optionsSheetRef} enableDynamicSizing backdropComponent={renderBackdrop}>
+                <BottomSheetView style={[styles.bottomSheetContent, { paddingBottom: (insets?.bottom ?? 0) + 32 }]}>
+                    <View style={styles.bottomSheetHeader}>
+                        <Text style={styles.bottomSheetTitle}>책 옵션</Text>
+                        <TouchableOpacity
+                            onPress={() => optionsSheetRef.current?.dismiss()}
+                            style={styles.bottomSheetCloseBtn}
+                        >
+                            <MaterialIcons name="close" size={24} color="#0f172a" />
+                        </TouchableOpacity>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.bottomSheetOption}
+                        onPress={() => {
+                            optionsSheetRef.current?.dismiss();
+                            router.push({ pathname: '/book/register', params: { bookId: bookIdStr } });
+                        }}
+                    >
+                        <Text style={styles.bottomSheetOptionText}>수정하기</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.bottomSheetOption}
+                        onPress={async () => {
+                            optionsSheetRef.current?.dismiss();
+                            try {
+                                await apiBooks.deleteBook(Number(bookIdStr));
+                                router.back();
+                            } catch (e) {
+                                console.error('Delete book failed', e);
+                            }
+                        }}
+                    >
+                        <Text style={styles.bottomSheetOptionDestructive}>삭제하기</Text>
+                    </TouchableOpacity>
+                </BottomSheetView>
+            </BottomSheetModal>
+
+            {/* Status Bottom Sheet */}
+            <BottomSheetModal ref={statusSheetRef} enableDynamicSizing backdropComponent={renderBackdrop}>
+                <BottomSheetView style={[styles.bottomSheetContent, { paddingBottom: (insets?.bottom ?? 0) + 32 }]}>
+                    <View style={styles.bottomSheetHeader}>
+                        <Text style={styles.bottomSheetTitle}>상태 변경</Text>
+                        <TouchableOpacity
+                            onPress={() => statusSheetRef.current?.dismiss()}
+                            style={styles.bottomSheetCloseBtn}
+                        >
+                            <MaterialIcons name="close" size={24} color="#0f172a" />
+                        </TouchableOpacity>
+                    </View>
+                    {BOOK_STATUS_OPTIONS.map((opt) => {
+                        const isActive = book?.status === opt.value;
+                        return (
+                            <TouchableOpacity
+                                key={opt.value}
+                                style={[
+                                    styles.bottomSheetOption,
+                                    isActive && { backgroundColor: opt.bgColor },
+                                ]}
+                                onPress={() => {
+                                    changeStatus(opt.value);
+                                    statusSheetRef.current?.dismiss();
+                                }}
+                            >
+                                <Text
+                                    style={[
+                                        styles.bottomSheetOptionText,
+                                        { color: isActive ? opt.color : '#475569' },
+                                        isActive && styles.bottomSheetOptionTextActive,
+                                    ]}
+                                >
+                                    {opt.label}
+                                </Text>
+                                {isActive && <MaterialIcons name="check" size={20} color={opt.color} />}
+                            </TouchableOpacity>
+                        );
+                    })}
+                </BottomSheetView>
+            </BottomSheetModal>
 
             {/* Fixed Bottom Action */}
             <View style={[styles.bottomActionContainer, { paddingBottom: insets.bottom || 24 }]}>
@@ -433,5 +507,47 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#94a3b8',
         textAlign: 'center',
+    },
+    bottomSheetContent: {
+        paddingHorizontal: 20,
+        paddingBottom: 32,
+    },
+    bottomSheetHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    bottomSheetTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#0f172a',
+    },
+    bottomSheetCloseBtn: {
+        padding: 4,
+    },
+    bottomSheetOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        marginBottom: 4,
+    },
+    bottomSheetOptionActive: {
+        backgroundColor: 'rgba(48, 110, 232, 0.1)',
+    },
+    bottomSheetOptionText: {
+        fontSize: 16,
+        color: '#475569',
+    },
+    bottomSheetOptionTextActive: {
+        fontWeight: '600',
+    },
+    bottomSheetOptionDestructive: {
+        fontSize: 16,
+        color: '#dc2626',
+        fontWeight: '500',
     },
 });

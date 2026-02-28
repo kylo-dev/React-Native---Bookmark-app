@@ -15,23 +15,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useState } from 'react';
 import { apiBooks } from '../../features/book/api/api';
 import { StatusBar } from 'expo-status-bar';
+import { LIBRARY_FILTER_OPTIONS } from '@/constants/book-status';
 
 const { width } = Dimensions.get('window');
 const COLUMN_GAP = 16;
 const PADDING_HORIZONTAL = 16;
-const CARD_WIDTH = (width - PADDING_HORIZONTAL * 2 - COLUMN_GAP) / 2;
-
-const FILTER_OPTIONS = ['All Books', 'Reading', 'Finished', 'Cancelled'];
+const CARD_WIDTH = ((width - PADDING_HORIZONTAL * 2 - COLUMN_GAP) / 2) * 0.92;
 
 export default function HomeScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const [activeFilter, setActiveFilter] = useState('All Books');
+    const [activeFilter, setActiveFilter] = useState('all');
     const [books, setBooks] = useState<any[]>([]);
 
-    const fetchBooks = async (filter: string) => {
+    const fetchBooks = async (filter: string | undefined) => {
         try {
-            const data = await apiBooks.getBooks(filter);
+            const data = await apiBooks.getBooks(filter === 'all' ? undefined : filter);
             setBooks(data || []);
         } catch (e) {
             console.error('Fetch books failed:', e);
@@ -68,7 +67,7 @@ export default function HomeScreen() {
                     <View style={[styles.quoteBadge, quotesCount >= 10 && styles.quoteBadgeActive]}>
                         <MaterialIcons
                             name="format-quote"
-                            size={14}
+                            size={12}
                             color={quotesCount >= 10 ? '#306ee8' : '#64748b'}
                         />
                         <Text style={[styles.quoteText, quotesCount >= 10 && styles.quoteTextActive]}>
@@ -103,16 +102,16 @@ export default function HomeScreen() {
                         contentContainerStyle={styles.filterScrollConfig}
                         style={styles.filterScroll}
                     >
-                        {FILTER_OPTIONS.map((filter) => {
-                            const isActive = activeFilter === filter;
+                        {LIBRARY_FILTER_OPTIONS.map((filter) => {
+                            const isActive = activeFilter === filter.value;
                             return (
                                 <TouchableOpacity
-                                    key={filter}
+                                    key={filter.value}
                                     style={[styles.filterItem, isActive && styles.filterItemActive]}
-                                    onPress={() => setActiveFilter(filter)}
+                                    onPress={() => setActiveFilter(filter.value)}
                                 >
                                     <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-                                        {filter}
+                                        {filter.label}
                                     </Text>
                                 </TouchableOpacity>
                             );
@@ -222,7 +221,7 @@ const styles = StyleSheet.create({
     },
     gridRow: {
         justifyContent: 'space-between',
-        marginBottom: 24,
+        marginBottom: 20,
     },
     cardContainer: {
         width: CARD_WIDTH,
@@ -230,10 +229,10 @@ const styles = StyleSheet.create({
     coverWrapper: {
         width: CARD_WIDTH,
         height: CARD_WIDTH * 1.5, // Aspect ratio 2/3
-        borderRadius: 12,
+        borderRadius: 10,
         overflow: 'hidden',
         backgroundColor: '#e2e8f0',
-        marginBottom: 12,
+        marginBottom: 10,
     },
     coverImage: {
         width: '100%',
@@ -260,32 +259,32 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4,
     },
     cardTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '700',
         color: '#0f172a',
-        marginBottom: 4,
+        marginBottom: 3,
     },
     cardAuthor: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '500',
         color: '#64748b',
-        marginBottom: 8,
+        marginBottom: 6,
     },
     quoteBadge: {
         alignSelf: 'flex-start',
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        paddingHorizontal: 6,
+        paddingVertical: 3,
         borderRadius: 6,
         backgroundColor: '#e2e8f0',
-        gap: 4,
+        gap: 3,
     },
     quoteBadgeActive: {
         backgroundColor: 'rgba(48, 110, 232, 0.1)',
     },
     quoteText: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '600',
         color: '#64748b',
     },
