@@ -68,7 +68,17 @@ export default function HomeScreen() {
                 onPress={() => router.push({ pathname: '/book/[id]', params: { id: item.id.toString() } })}
             >
                 <View style={styles.coverWrapper}>
-                    <Image style={styles.coverImage} source={item.cover_url ? { uri: item.cover_url } : undefined} />
+                    {item.cover_url ? (
+                        <Image
+                            style={[styles.coverImage, styles.coverImagePadding]}
+                            source={{ uri: item.cover_url }}
+                            resizeMode="contain"
+                        />
+                    ) : (
+                        <View style={styles.coverPlaceholder}>
+                            <MaterialIcons name="menu-book" size={48} color="#94a3b8" />
+                        </View>
+                    )}
                     <View style={styles.coverGradient} />
                 </View>
 
@@ -104,10 +114,13 @@ export default function HomeScreen() {
                 onPress={() => router.push({ pathname: '/book/[id]', params: { id: item.id.toString() } })}
             >
                 <View style={styles.listCoverWrapper}>
-                    <Image
-                        style={styles.listCoverImage}
-                        source={item.cover_url ? { uri: item.cover_url } : undefined}
-                    />
+                    {item.cover_url ? (
+                        <Image style={styles.listCoverImage} source={{ uri: item.cover_url }} resizeMode="contain" />
+                    ) : (
+                        <View style={styles.listCoverPlaceholder}>
+                            <MaterialIcons name="menu-book" size={28} color="#94a3b8" />
+                        </View>
+                    )}
                     <View style={styles.coverGradient} />
                 </View>
 
@@ -222,9 +235,7 @@ export default function HomeScreen() {
                         viewMode === 'grid' ? styles.gridParams : styles.listParams,
                         filteredBooks.length === 0 && styles.emptyGridParams,
                     ]}
-                    columnWrapperStyle={
-                        viewMode === 'grid' && filteredBooks.length > 0 ? styles.gridRow : undefined
-                    }
+                    columnWrapperStyle={viewMode === 'grid' && filteredBooks.length > 0 ? styles.gridRow : undefined}
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.emptyStateContainer}>
@@ -234,9 +245,7 @@ export default function HomeScreen() {
                                 color="#cbd5e1"
                             />
                             <Text style={styles.emptyStateTitle}>
-                                {searchQuery.trim()
-                                    ? '검색 결과가 없습니다'
-                                    : '아직 등록된 책이 없습니다'}
+                                {searchQuery.trim() ? '검색 결과가 없습니다' : '아직 등록된 책이 없습니다'}
                             </Text>
                             <Text style={styles.emptyStateDesc}>
                                 {searchQuery.trim()
@@ -394,11 +403,18 @@ const styles = StyleSheet.create({
         height: LIST_COVER_HEIGHT,
         borderRadius: 8,
         overflow: 'hidden',
-        backgroundColor: '#e2e8f0',
+        backgroundColor: '#eef2ff',
     },
     listCoverImage: {
         width: '100%',
         height: '100%',
+    },
+    listCoverPlaceholder: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#e0e7ff',
     },
     listCardInfo: {
         flex: 1,
@@ -432,12 +448,22 @@ const styles = StyleSheet.create({
         height: CARD_WIDTH * 1.5, // Aspect ratio 2/3
         borderRadius: 10,
         overflow: 'hidden',
-        backgroundColor: '#e2e8f0',
+        backgroundColor: '#eef2ff',
         marginBottom: 10,
     },
     coverImage: {
         width: '100%',
         height: '100%',
+    },
+    coverImagePadding: {
+        padding: 10,
+    },
+    coverPlaceholder: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#e0e7ff',
     },
     coverGradient: {
         ...StyleSheet.absoluteFillObject,

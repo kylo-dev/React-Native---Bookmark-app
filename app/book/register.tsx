@@ -165,7 +165,7 @@ export default function RegisterBookScreen() {
                     <MaterialIcons name="arrow-back" size={24} color="#475569" />
                 </TouchableOpacity>
 
-                <Text style={styles.headerTitle}>{isEditMode ? 'Edit Book Info' : 'Manual Entry'}</Text>
+                <Text style={styles.headerTitle}>{isEditMode ? 'Edit Book Info' : 'Add New Book'}</Text>
 
                 <View style={{ width: 40 }} />
             </View>
@@ -178,7 +178,11 @@ export default function RegisterBookScreen() {
                 <View style={styles.content}>
                     {/* Cover Image Upload Area */}
                     <View style={styles.coverUploadSection}>
-                        <TouchableOpacity style={styles.coverUploadBox} activeOpacity={0.8} onPress={showImageOptions}>
+                        <TouchableOpacity
+                            style={[styles.coverUploadBox, coverImage && styles.coverUploadBoxWithImage]}
+                            activeOpacity={0.8}
+                            onPress={showImageOptions}
+                        >
                             {coverImage ? (
                                 <Image
                                     source={{ uri: coverImage }}
@@ -233,6 +237,7 @@ export default function RegisterBookScreen() {
                             <TextInput
                                 style={styles.textInput}
                                 placeholder="e.g. The Midnight Library"
+                                placeholderTextColor="#64748b"
                                 value={title}
                                 onChangeText={setTitle}
                             />
@@ -244,6 +249,7 @@ export default function RegisterBookScreen() {
                             <TextInput
                                 style={styles.textInput}
                                 placeholder="e.g. Matt Haig"
+                                placeholderTextColor="#64748b"
                                 value={author}
                                 onChangeText={setAuthor}
                             />
@@ -251,7 +257,7 @@ export default function RegisterBookScreen() {
 
                         {/* Status */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>상태</Text>
+                            <Text style={styles.label}>독서 상태</Text>
                             {/* Simulated Select Dropdown */}
                             <TouchableOpacity
                                 style={styles.selectInput}
@@ -384,6 +390,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,
+    },
+    coverUploadBoxWithImage: {
+        borderWidth: 0,
+        overflow: 'hidden',
     },
     coverUploadText: {
         fontSize: 12,
