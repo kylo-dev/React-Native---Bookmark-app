@@ -62,6 +62,17 @@ export function useAuth() {
     return { session, loading };
 }
 
+export const updateUserName = async (name: string) => {
+    const { data, error } = await supabase.auth.updateUser({
+        data: { name },
+    });
+    if (error) {
+        console.error('프로필 수정 에러:', error.message);
+        return { data: null, error };
+    }
+    return { data, error: null };
+};
+
 export const getUserId = async () => {
     const {
         data: { user },
