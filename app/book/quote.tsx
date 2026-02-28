@@ -27,37 +27,36 @@ const { width } = Dimensions.get('window');
 
 export default function QuoteDetailScreen() {
     const router = useRouter();
-    const { quoteId } = useLocalSearchParams();
+    const { quoteId } = useLocalSearchParams<{ quoteId: string }>();
     const insets = useSafeAreaInsets();
-
-    const quoteIdStr = Array.isArray(quoteId) ? quoteId[0] : (quoteId as string);
+    const quoteIdStr = quoteId ?? '';
     const keyboardHeight = useKeyboardHeight();
     const bottomSheetPadding = getBottomSheetPadding(insets);
 
     const [quote, setQuote] = useState<any>(null);
     const [thought, setThought] = useState('');
-
     const [currentQuoteText, setCurrentQuoteText] = useState('');
     const [editingQuote, setEditingQuote] = useState(false);
     const [editedQuoteText, setEditedQuoteText] = useState('');
-
     const [events, setEvents] = useState<any[]>([]);
     const [editingEventId, setEditingEventId] = useState<string | null>(null);
     const [editedEventContent, setEditedEventContent] = useState('');
 
     const fetchData = useCallback(async () => {
         if (!quoteIdStr) return;
+        const qId = Number(quoteIdStr);
         try {
-            const qId = Number(quoteIdStr);
-            const qData = await apiQuotes.getQuoteById(qId);
+            const [qData, tData] = await Promise.all([
+                apiQuotes.getQuoteById(qId),
+                apiThoughts.getThoughtsByQuoteId(qId),
+            ]);
             setQuote(qData);
-            setCurrentQuoteText((prev) => (editingQuote ? prev : qData.text));
-            const tData = await apiThoughts.getThoughtsByQuoteId(qId);
-            setEvents(tData || []);
+            setCurrentQuoteText(qData?.text ?? '');
+            setEvents(tData ?? []);
         } catch (e) {
             console.error('Failed to fetch quote details', e);
         }
-    }, [quoteIdStr, editingQuote]);
+    }, [quoteIdStr]);
 
     useFocusEffect(
         useCallback(() => {
@@ -69,11 +68,8 @@ export default function QuoteDetailScreen() {
     const [eventYPositions, setEventYPositions] = useState<{ [key: string]: number }>({});
 
     const quoteOptionsSheetRef = useRef<BottomSheetModal>(null);
-    const quoteEditConfirmSheetRef = useRef<BottomSheetModal>(null);
-    const thoughtActionSheetRef = useRef<BottomSheetModal>(null);
     const thoughtOptionsSheetRef = useRef<BottomSheetModal>(null);
     const pendingThoughtEventRef = useRef<any>(null);
-    const quoteEditActionRef = useRef<'save' | 'cancel' | null>(null);
     const renderBackdrop = useBottomSheetBackdrop();
 
     const startEditingQuote = () => {
@@ -81,40 +77,21 @@ export default function QuoteDetailScreen() {
         setEditingQuote(true);
     };
 
-    const handleQuoteBlur = () => {
-        if (editedQuoteText !== currentQuoteText) {
-            quoteEditConfirmSheetRef.current?.present();
-        } else {
-            setEditingQuote(false);
+    const handleQuoteConfirm = () => {
+        const trimmed = editedQuoteText.trim();
+        const prevText = currentQuoteText;
+        if (trimmed && trimmed !== prevText) {
+            setCurrentQuoteText(trimmed);
+            apiQuotes
+                .updateQuote(Number(quoteIdStr), { text: trimmed })
+                .catch((e) => {
+                    console.error('Update quote failed:', e);
+                    Alert.alert('Error', 'Failed to update quote.');
+                    setCurrentQuoteText(prevText);
+                });
         }
-    };
-
-    const handleQuoteEditCancel = () => {
-        quoteEditActionRef.current = 'cancel';
-        setEditedQuoteText(currentQuoteText);
         setEditingQuote(false);
-        quoteEditConfirmSheetRef.current?.dismiss();
-    };
-
-    const handleQuoteEditConfirm = () => {
-        if (!editedQuoteText.trim()) {
-            Alert.alert('Error', 'Quote cannot be empty.');
-            return;
-        }
-        quoteEditActionRef.current = 'save';
-        quoteEditConfirmSheetRef.current?.dismiss();
-        apiQuotes
-            .updateQuote(Number(quoteIdStr), { text: editedQuoteText })
-            .then(() => {
-                setCurrentQuoteText(editedQuoteText);
-                setEditingQuote(false);
-            })
-            .catch((e) => {
-                console.error('Update quote failed:', e);
-                Alert.alert('Error', 'Failed to update quote.');
-                setEditedQuoteText(currentQuoteText);
-                setEditingQuote(false);
-            });
+        Keyboard.dismiss();
     };
 
     const openThoughtOptions = (event: any) => {
@@ -134,68 +111,43 @@ export default function QuoteDetailScreen() {
         }, 150);
     };
 
-    const deleteThought = useCallback(
-        (event: { id: number }, onDismiss?: () => void) => {
-            onDismiss?.();
-            apiThoughts
-                .deleteThought(event.id)
-                .then(() => {
-                    setEvents((prev) => prev.filter((e) => e.id !== event.id));
-                    setEditingEventId(null);
-                    pendingThoughtEventRef.current = null;
-                })
-                .catch(() => {
-                    Alert.alert('Error', 'Failed to delete thought.');
-                    pendingThoughtEventRef.current = null;
-                });
-        },
-        [],
-    );
+    const deleteThought = useCallback((event: { id: number }) => {
+        apiThoughts
+            .deleteThought(event.id)
+            .then(() => {
+                setEvents((prev) => prev.filter((e) => e.id !== event.id));
+                setEditingEventId(null);
+                pendingThoughtEventRef.current = null;
+            })
+            .catch(() => {
+                Alert.alert('Error', 'Failed to delete thought.');
+                pendingThoughtEventRef.current = null;
+            });
+    }, []);
 
     const handleThoughtOptionDelete = () => {
         const event = pendingThoughtEventRef.current;
         if (!event) return;
-        deleteThought(event, () => thoughtOptionsSheetRef.current?.dismiss());
+        thoughtOptionsSheetRef.current?.dismiss();
+        deleteThought(event);
     };
 
-    const handleEventBlur = (event: any) => {
-        if (editedEventContent !== event.text) {
-            pendingThoughtEventRef.current = event;
-            thoughtActionSheetRef.current?.present();
-        } else {
-            setEditingEventId(null);
+    const handleThoughtConfirm = (event: any) => {
+        if (!editedEventContent.trim()) {
+            deleteThought(event);
+        } else if (editedEventContent !== event.text) {
+            const prevText = event.text;
+            setEvents((prev) => prev.map((e) => (e.id === event.id ? { ...e, text: editedEventContent } : e)));
+            apiThoughts
+                .updateThought(event.id, editedEventContent)
+                .catch((e) => {
+                    console.error('Update thought failed:', e);
+                    Alert.alert('Error', 'Failed to update thought.');
+                    setEvents((prev) => prev.map((e) => (e.id === event.id ? { ...e, text: prevText } : e)));
+                });
         }
-    };
-
-    const handleThoughtActionCancel = () => {
         setEditingEventId(null);
-        pendingThoughtEventRef.current = null;
-        thoughtActionSheetRef.current?.dismiss();
-    };
-
-    const handleThoughtActionSave = () => {
-        const event = pendingThoughtEventRef.current;
-        if (!event) return;
-        thoughtActionSheetRef.current?.dismiss();
-        apiThoughts
-            .updateThought(event.id, editedEventContent)
-            .then(() => {
-                setEvents((prev) => prev.map((e) => (e.id === event.id ? { ...e, text: editedEventContent } : e)));
-                setEditingEventId(null);
-                pendingThoughtEventRef.current = null;
-            })
-            .catch((e) => {
-                console.error('Update thought failed:', e);
-                Alert.alert('Error', 'Failed to update thought.');
-                setEditingEventId(null);
-                pendingThoughtEventRef.current = null;
-            });
-    };
-
-    const handleThoughtActionDelete = () => {
-        const event = pendingThoughtEventRef.current;
-        if (!event) return;
-        deleteThought(event, () => thoughtActionSheetRef.current?.dismiss());
+        Keyboard.dismiss();
     };
 
     const handleMorePress = () => quoteOptionsSheetRef.current?.present();
@@ -260,13 +212,9 @@ export default function QuoteDetailScreen() {
                         <Text style={styles.pageNumberText}>
                             {quote?.page_number ? `PAGE ${quote.page_number}` : ''}
                         </Text>
-                        {editingQuote ? (
-                            <TouchableOpacity style={styles.editActionBtn} onPress={() => Keyboard.dismiss()}>
+                        {editingQuote && (
+                            <TouchableOpacity style={styles.editActionBtn} onPress={handleQuoteConfirm}>
                                 <MaterialIcons name="check" size={20} color="#1754cf" />
-                            </TouchableOpacity>
-                        ) : (
-                            <TouchableOpacity style={styles.editActionBtn} onPress={startEditingQuote}>
-                                <MaterialIcons name="edit" size={18} color="#94a3b8" />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -285,7 +233,7 @@ export default function QuoteDetailScreen() {
                                 multiline
                                 value={editedQuoteText}
                                 onChangeText={setEditedQuoteText}
-                                onBlur={handleQuoteBlur}
+                                onBlur={handleQuoteConfirm}
                                 autoFocus
                                 scrollEnabled={false}
                             />
@@ -342,9 +290,6 @@ export default function QuoteDetailScreen() {
 
                                     {/* Event Card */}
                                     <View style={styles.eventCardContainer}>
-                                        {/* Pointer Arrow */}
-                                        <View style={styles.eventCardPointer} />
-
                                         <View style={styles.eventCard}>
                                             <View style={styles.eventHeader}>
                                                 {editingEventId === event.id ? (
@@ -354,7 +299,7 @@ export default function QuoteDetailScreen() {
                                                         multiline
                                                         value={editedEventContent}
                                                         onChangeText={setEditedEventContent}
-                                                        onBlur={() => handleEventBlur(event)}
+                                                        onBlur={() => handleThoughtConfirm(event)}
                                                         autoFocus
                                                         scrollEnabled={false}
                                                     />
@@ -372,7 +317,7 @@ export default function QuoteDetailScreen() {
                                                 <View style={styles.eventEditBtn}>
                                                     {editingEventId === event.id ? (
                                                         <TouchableOpacity
-                                                            onPress={() => Keyboard.dismiss()}
+                                                            onPress={() => handleThoughtConfirm(event)}
                                                             hitSlop={HIT_SLOP_DEFAULT}
                                                         >
                                                             <MaterialIcons name="check" size={18} color="#1754cf" />
@@ -454,39 +399,17 @@ export default function QuoteDetailScreen() {
                             style={styles.bottomSheetCloseBtn}
                         ></TouchableOpacity>
                     </View>
+                    <TouchableOpacity
+                        style={styles.bottomSheetOption}
+                        onPress={() => {
+                            quoteOptionsSheetRef.current?.dismiss();
+                            startEditingQuote();
+                        }}
+                    >
+                        <Text style={styles.bottomSheetOptionText}>수정하기</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={styles.bottomSheetOption} onPress={handleQuoteDelete}>
                         <Text style={styles.bottomSheetOptionDestructive}>삭제하기</Text>
-                    </TouchableOpacity>
-                </BottomSheetView>
-            </BottomSheetModal>
-
-            {/* Quote Edit Confirm Bottom Sheet */}
-            <BottomSheetModal
-                ref={quoteEditConfirmSheetRef}
-                enableDynamicSizing
-                backdropComponent={renderBackdrop}
-                onDismiss={() => {
-                    if (quoteEditActionRef.current !== 'save') {
-                        setEditedQuoteText(currentQuoteText);
-                        setEditingQuote(false);
-                    }
-                    quoteEditActionRef.current = null;
-                }}
-            >
-                <BottomSheetView style={[styles.bottomSheetContent, { paddingBottom: bottomSheetPadding }]}>
-                    <View style={styles.bottomSheetHeader}>
-                        <Text style={styles.bottomSheetTitle}>수정할까요?</Text>
-                        <TouchableOpacity onPress={handleQuoteEditCancel} style={styles.bottomSheetCloseBtn}>
-                            <MaterialIcons name="close" size={24} color="#0f172a" />
-                        </TouchableOpacity>
-                    </View>
-                    <TouchableOpacity style={styles.bottomSheetOption} onPress={handleQuoteEditCancel}>
-                        <Text style={styles.bottomSheetOptionText}>취소</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.bottomSheetOption} onPress={handleQuoteEditConfirm}>
-                        <Text style={[styles.bottomSheetOptionText, { color: '#1754cf', fontWeight: '600' }]}>
-                            저장
-                        </Text>
                     </TouchableOpacity>
                 </BottomSheetView>
             </BottomSheetModal>
@@ -499,9 +422,7 @@ export default function QuoteDetailScreen() {
                         <TouchableOpacity
                             onPress={() => thoughtOptionsSheetRef.current?.dismiss()}
                             style={styles.bottomSheetCloseBtn}
-                        >
-                            <MaterialIcons name="close" size={24} color="#0f172a" />
-                        </TouchableOpacity>
+                        ></TouchableOpacity>
                     </View>
                     <TouchableOpacity
                         style={styles.bottomSheetOption}
@@ -512,42 +433,6 @@ export default function QuoteDetailScreen() {
                     <TouchableOpacity style={styles.bottomSheetOption} onPress={handleThoughtOptionDelete}>
                         <Text style={styles.bottomSheetOptionDestructive}>삭제하기</Text>
                     </TouchableOpacity>
-                </BottomSheetView>
-            </BottomSheetModal>
-
-            {/* Thought Action Bottom Sheet */}
-            <BottomSheetModal
-                ref={thoughtActionSheetRef}
-                enableDynamicSizing
-                backdropComponent={renderBackdrop}
-                onDismiss={() => {
-                    setEditingEventId(null);
-                    pendingThoughtEventRef.current = null;
-                }}
-            >
-                <BottomSheetView style={[styles.bottomSheetContent, { paddingBottom: bottomSheetPadding }]}>
-                    <View style={styles.bottomSheetHeader}>
-                        <Text style={styles.bottomSheetTitle}>
-                            {!editedEventContent.trim() ? '삭제할까요?' : '수정할까요?'}
-                        </Text>
-                        <TouchableOpacity onPress={handleThoughtActionCancel} style={styles.bottomSheetCloseBtn}>
-                            <MaterialIcons name="close" size={24} color="#0f172a" />
-                        </TouchableOpacity>
-                    </View>
-                    <TouchableOpacity style={styles.bottomSheetOption} onPress={handleThoughtActionCancel}>
-                        <Text style={styles.bottomSheetOptionText}>취소</Text>
-                    </TouchableOpacity>
-                    {!editedEventContent.trim() ? (
-                        <TouchableOpacity style={styles.bottomSheetOption} onPress={handleThoughtActionDelete}>
-                            <Text style={styles.bottomSheetOptionDestructive}>삭제하기</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity style={styles.bottomSheetOption} onPress={handleThoughtActionSave}>
-                            <Text style={[styles.bottomSheetOptionText, { color: '#1754cf', fontWeight: '600' }]}>
-                                저장
-                            </Text>
-                        </TouchableOpacity>
-                    )}
                 </BottomSheetView>
             </BottomSheetModal>
         </View>
@@ -653,13 +538,14 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 32,
         bottom: 0,
-        left: 16 + 23,
+        left: 16 + 24,
         width: 2,
         backgroundColor: '#e2e8f0',
         zIndex: -1,
     },
     timelineRow: {
         flexDirection: 'row',
+        alignItems: 'flex-start',
     },
     timelineNodeContainer: {
         width: 48,
@@ -691,20 +577,8 @@ const styles = StyleSheet.create({
         paddingLeft: 16,
         paddingBottom: 32,
         paddingTop: 8,
-        position: 'relative',
-    },
-    eventCardPointer: {
-        position: 'absolute',
-        top: 24,
-        left: 9,
-        width: 14,
-        height: 14,
-        backgroundColor: '#ffffff',
-        borderLeftWidth: 1,
-        borderBottomWidth: 1,
-        borderColor: '#e2e8f0',
-        transform: [{ rotate: '45deg' }],
-        zIndex: 1,
+        paddingRight: 0,
+        minWidth: 0,
     },
     eventCard: {
         backgroundColor: '#ffffff',
@@ -712,7 +586,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        zIndex: 2,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',

@@ -13,6 +13,7 @@ import {
 import { apiBooks } from '../../features/book/api/api';
 import { apiQuotes } from '../../features/quote/api/api';
 import { BOOK_STATUS_OPTIONS, getStatusOption } from '@/constants/book-status';
+import { formatDateYMD } from '@/utils/date';
 
 export default function BookDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -102,10 +103,17 @@ export default function BookDetailScreen() {
                 <View style={styles.heroSection}>
                     <View style={styles.coverShadow}>
                         <View style={styles.coverWrapper}>
-                            <Image
-                                source={book.cover_url ? { uri: book.cover_url } : undefined}
-                                style={styles.coverImage}
-                            />
+                            {book.cover_url ? (
+                                <Image
+                                    source={{ uri: book.cover_url }}
+                                    style={styles.coverImage}
+                                    resizeMode="contain"
+                                />
+                            ) : (
+                                <View style={styles.coverPlaceholder}>
+                                    <MaterialIcons name="menu-book" size={64} color="#94a3b8" />
+                                </View>
+                            )}
                         </View>
                     </View>
 
@@ -177,9 +185,7 @@ export default function BookDetailScreen() {
                                 </Text>
 
                                 <View style={styles.quoteFooter}>
-                                    <Text style={styles.dateText}>
-                                        {new Date(quote.created_at).toLocaleDateString()}
-                                    </Text>
+                                    <Text style={styles.dateText}>{formatDateYMD(quote.created_at)}</Text>
 
                                     <View style={styles.thoughtBadgeContainer}>
                                         <View style={styles.thoughtBadge}>
@@ -205,9 +211,7 @@ export default function BookDetailScreen() {
                         <TouchableOpacity
                             onPress={() => optionsSheetRef.current?.dismiss()}
                             style={styles.bottomSheetCloseBtn}
-                        >
-                            <MaterialIcons name="close" size={24} color="#0f172a" />
-                        </TouchableOpacity>
+                        ></TouchableOpacity>
                     </View>
                     <TouchableOpacity
                         style={styles.bottomSheetOption}
@@ -327,12 +331,19 @@ const styles = StyleSheet.create({
         width: 160,
         height: 240,
         borderRadius: 8,
-        backgroundColor: '#1e293b',
+        backgroundColor: '#eef2ff',
         overflow: 'hidden',
     },
     coverImage: {
         width: '100%',
         height: '100%',
+    },
+    coverPlaceholder: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#e0e7ff',
     },
     title: {
         fontSize: 24,
