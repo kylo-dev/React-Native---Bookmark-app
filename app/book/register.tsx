@@ -9,6 +9,7 @@ import {
     Platform,
     Alert,
     Image,
+    ActivityIndicator,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -17,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import { apiBooks } from '../../features/book/api/api';
+import { uploadBookCover } from '@/lib/storage';
 
 export default function RegisterBookScreen() {
     const router = useRouter();
@@ -89,17 +91,31 @@ export default function RegisterBookScreen() {
         ]);
     };
 
+    const [saving, setSaving] = useState(false);
+
     const handleSave = async () => {
         if (!title.trim() || !author.trim()) {
             Alert.alert('Required Fields', 'Please enter both book title and author.');
             return;
         }
 
+        setSaving(true);
         try {
+            let finalCoverUrl: string | null = null;
+
+            if (coverImage) {
+                const uploadedUrl = await uploadBookCover(coverImage);
+                if (!uploadedUrl) {
+                    Alert.alert('Error', '이미지 업로드에 실패했습니다.');
+                    return;
+                }
+                finalCoverUrl = uploadedUrl;
+            }
+
             const payload = {
                 title: title.trim(),
                 author: author.trim(),
-                cover_url: coverImage,
+                cover_url: finalCoverUrl,
                 status: status,
             };
 
@@ -113,6 +129,8 @@ export default function RegisterBookScreen() {
         } catch (e) {
             console.error('Save failed:', e);
             Alert.alert('Error', 'Failed to save book.');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -229,9 +247,20 @@ export default function RegisterBookScreen() {
             </ScrollView>
 
             <View style={[styles.bottomContainer, { paddingBottom: (insets?.bottom ?? 0) || 24 }]}>
-                <TouchableOpacity style={styles.saveButton} activeOpacity={0.8} onPress={handleSave}>
-                    <MaterialIcons name="save" size={20} color="#ffffff" />
-                    <Text style={styles.saveButtonText}>{isEditMode ? 'Save Changes' : 'Save to Library'}</Text>
+                <TouchableOpacity
+                    style={[styles.saveButton, saving && { opacity: 0.7 }]}
+                    activeOpacity={0.8}
+                    onPress={handleSave}
+                    disabled={saving}
+                >
+                    {saving ? (
+                        <ActivityIndicator color="#ffffff" />
+                    ) : (
+                        <>
+                            <MaterialIcons name="save" size={20} color="#ffffff" />
+                            <Text style={styles.saveButtonText}>{isEditMode ? 'Save Changes' : 'Save to Library'}</Text>
+                        </>
+                    )}
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
