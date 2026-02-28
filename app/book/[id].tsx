@@ -3,48 +3,77 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { BOOKS, QUOTES } from '../../constants/dummy';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { apiBooks, apiQuotes } from '../../lib/api';
 
 export default function BookDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
-  const book = BOOKS.find(b => b.id === id) || BOOKS[0];
-  const [favoriteQuotes, setFavoriteQuotes] = useState<Record<string, boolean>>({});
+  const bookIdStr = Array.isArray(id) ? id[0] : (id as string);
+  
+  const [book, setBook] = useState<any>(null);
+  const [quotes, setQuotes] = useState<any[]>([]);
 
-  const toggleFavorite = (quoteId: string) => {
-    setFavoriteQuotes(prev => ({
-      ...prev,
-      [quoteId]: !prev[quoteId]
-    }));
+  const fetchData = async () => {
+    if (!bookIdStr) return;
+    try {
+      const bId = Number(bookIdStr);
+      const bData = await apiBooks.getBookById(bId);
+      setBook(bData);
+      const qData = await apiQuotes.getQuotesByBookId(bId);
+      setQuotes(qData || []);
+    } catch (e) {
+      console.error('Fetch book detail failed:', e);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [bookIdStr])
+  );
+
+  const toggleFavorite = async (quote: any) => {
+    try {
+      await apiQuotes.toggleFavorite(quote.id, !quote.is_favorite);
+      setQuotes(prev => prev.map(q => q.id === quote.id ? { ...q, is_favorite: !quote.is_favorite } : q));
+    } catch(e) { console.error('Toggle favorite failed', e); }
   };
 
   const handleMorePress = () => {
-    Alert.alert(
-      'Book Options',
-      'Choose an action',
-      [
-        { text: 'Edit Book Info', onPress: () => router.push({ pathname: '/book/register', params: { bookId: id } }) },
-        { text: 'Delete Book', onPress: () => Alert.alert('Deleted! (Dummy)', '', [{ text: 'OK', onPress: () => router.back() }]), style: 'destructive' },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
+    Alert.alert('Book Options', 'Choose an action', [
+      { text: 'Edit Book Info', onPress: () => router.push({ pathname: '/book/register', params: { bookId: bookIdStr } }) },
+      { text: 'Delete Book', onPress: async () => {
+          try {
+            await apiBooks.deleteBook(Number(bookIdStr));
+            router.back();
+          } catch(e) { console.error('Delete book failed', e); }
+        }, style: 'destructive' },
+      { text: 'Cancel', style: 'cancel' }
+    ]);
+  };
+
+  const changeStatus = async (status: string) => {
+    try {
+      await apiBooks.updateBook(Number(bookIdStr), { status: status as any });
+      fetchData();
+    } catch(e) { console.error('Change status failed', e); }
   };
 
   const handleStatusPress = () => {
-    Alert.alert(
-      'Change Status',
-      'Select book status',
-      [
-        { text: 'Reading', onPress: () => Alert.alert('Status changed to Reading! (Dummy)') },
-        { text: 'Finished', onPress: () => Alert.alert('Status changed to Finished! (Dummy)') },
-        { text: 'Cancelled', onPress: () => Alert.alert('Status changed to Cancelled! (Dummy)') },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
+    Alert.alert('Change Status', 'Select book status', [
+      { text: 'Reading', onPress: () => changeStatus('READING') },
+      { text: 'Finished', onPress: () => changeStatus('FINISHED') },
+      { text: 'Cancelled', onPress: () => changeStatus('CANCELLED') },
+      { text: 'Cancel', style: 'cancel' }
+    ]);
   };
+
+  if (!book) return <View style={[styles.container, { paddingTop: insets.top }]}><Text>Loading...</Text></View>;
+
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -74,7 +103,7 @@ export default function BookDetailScreen() {
           <View style={styles.coverShadow}>
             <View style={styles.coverWrapper}>
               <Image 
-                source={{ uri: book.coverUrl }} 
+                source={book.cover_url ? { uri: book.cover_url } : undefined} 
                 style={styles.coverImage} 
               />
             </View>
@@ -85,7 +114,7 @@ export default function BookDetailScreen() {
           
           <TouchableOpacity style={styles.statusBadge} activeOpacity={0.8} onPress={handleStatusPress}>
             <View style={styles.statusDot} />
-            <Text style={styles.statusText}>{book.status || 'Reading'}</Text>
+            <Text style={styles.statusText}>{book.status === 'TO_READ' ? 'To Read' : book.status === 'READING' ? 'Reading' : book.status === 'FINISHED' ? 'Finished' : 'Cancelled'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -95,12 +124,12 @@ export default function BookDetailScreen() {
         {/* Section Title */}
         <View style={styles.quotesHeader}>
           <Text style={styles.quotesTitle}>Memorable Quotes</Text>
-          <Text style={styles.quotesCount}>Total {QUOTES.length}</Text>
+          <Text style={styles.quotesCount}>Total {quotes.length}</Text>
         </View>
 
         {/* Quotes List */}
         <View style={styles.quotesList}>
-          {QUOTES.length === 0 ? (
+          {quotes.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <MaterialIcons name="format-quote" size={48} color="#cbd5e1" />
               <Text style={styles.emptyStateTitle}>아직 기록된 문장이 없습니다</Text>
@@ -109,22 +138,22 @@ export default function BookDetailScreen() {
               </Text>
             </View>
           ) : (
-            QUOTES.map((quote) => (
+            quotes.map((quote) => (
               <TouchableOpacity 
-                key={quote.id} 
+                key={quote.id.toString()} 
                 style={styles.quoteCard} 
                 activeOpacity={0.9}
-                onPress={() => router.push({ pathname: '/book/quote', params: { bookId: id, quoteId: quote.id } })}
+                onPress={() => router.push({ pathname: '/book/quote', params: { bookId: bookIdStr, quoteId: quote.id.toString() } })}
               >
                 <TouchableOpacity 
                   style={styles.favoriteBadge}
-                  onPress={() => toggleFavorite(quote.id)}
+                  onPress={() => toggleFavorite(quote)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <MaterialIcons 
-                    name={favoriteQuotes[quote.id] ? "favorite" : "favorite-border"} 
+                    name={quote.is_favorite ? "favorite" : "favorite-border"} 
                     size={20} 
-                    color={favoriteQuotes[quote.id] ? "#306ee8" : "#cbd5e1"} 
+                    color={quote.is_favorite ? "#306ee8" : "#cbd5e1"} 
                   />
                 </TouchableOpacity>
 
@@ -133,12 +162,12 @@ export default function BookDetailScreen() {
                 </Text>
                 
                 <View style={styles.quoteFooter}>
-                  <Text style={styles.dateText}>{quote.date}</Text>
+                  <Text style={styles.dateText}>{new Date(quote.created_at).toLocaleDateString()}</Text>
                   
                   <View style={styles.thoughtBadgeContainer}>
                     <View style={styles.thoughtBadge}>
                       <MaterialIcons name="chat-bubble-outline" size={16} color="#94a3b8" />
-                      <Text style={styles.thoughtCount}>{quote.thoughtsCount}</Text>
+                      <Text style={styles.thoughtCount}>{quote.thoughts?.[0]?.count || 0}</Text>
                     </View>
                   </View>
                 </View>
@@ -156,7 +185,7 @@ export default function BookDetailScreen() {
         <TouchableOpacity 
           style={styles.recordButton} 
           activeOpacity={0.8}
-          onPress={() => router.push({ pathname: '/book/new-record', params: { bookId: id } })}
+          onPress={() => router.push({ pathname: '/book/new-record', params: { bookId: bookIdStr } })}
         >
           <MaterialIcons name="edit-note" size={24} color="#ffffff" />
           <Text style={styles.recordButtonText}>Record New Quote</Text>

@@ -1,48 +1,51 @@
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, Dimensions, Alert, Keyboard } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { QUOTES } from '../../constants/dummy';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { apiQuotes, apiThoughts } from '../../lib/api';
 
 const { width } = Dimensions.get('window');
-
-const TIMELINE_EVENTS = [
-  {
-    id: '1',
-    type: 'quote',
-    content: "This reminds me of the concept of 'Eternal Return'. The way the author describes the cyclic nature of time here is profound.",
-    date: 'Oct 12',
-    time: '10:30 AM',
-    icon: 'format-quote'
-  },
-  {
-    id: '2',
-    type: 'link',
-    content: "Cross-reference with page 42. There seems to be a contradiction in how the character is portrayed.",
-    date: 'Oct 14',
-    time: '2:15 PM',
-    icon: 'link'
-  }
-];
 
 export default function QuoteDetailScreen() {
   const router = useRouter();
   const { quoteId } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
+  
+  const quoteIdStr = Array.isArray(quoteId) ? quoteId[0] : (quoteId as string);
 
-  const quote = QUOTES.find(q => q.id === quoteId) || QUOTES[0];
+  const [quote, setQuote] = useState<any>(null);
   const [thought, setThought] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  const [currentQuoteText, setCurrentQuoteText] = useState(quote.text);
+  const [currentQuoteText, setCurrentQuoteText] = useState('');
   const [editingQuote, setEditingQuote] = useState(false);
   const [editedQuoteText, setEditedQuoteText] = useState('');
 
-  const [events, setEvents] = useState(TIMELINE_EVENTS);
+  const [events, setEvents] = useState<any[]>([]);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editedEventContent, setEditedEventContent] = useState('');
+
+  const fetchData = async () => {
+    if (!quoteIdStr) return;
+    try {
+      const qId = Number(quoteIdStr);
+      const qData = await apiQuotes.getQuoteById(qId);
+      setQuote(qData);
+      if (!editingQuote) {
+        setCurrentQuoteText(qData.text);
+      }
+      const tData = await apiThoughts.getThoughtsByQuoteId(qId);
+      setEvents(tData || []);
+    } catch(e) { console.error('Failed to fetch quote details', e); }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [quoteIdStr])
+  );
   
   const scrollViewRef = useRef<ScrollView>(null);
   const [eventYPositions, setEventYPositions] = useState<{ [key: string]: number }>({});
@@ -75,8 +78,15 @@ export default function QuoteDetailScreen() {
                 setEditingQuote(false);
                 return;
               }
-              setCurrentQuoteText(editedQuoteText);
-              setEditingQuote(false);
+              apiQuotes.updateQuote(Number(quoteIdStr), { text: editedQuoteText }).then(() => {
+                setCurrentQuoteText(editedQuoteText);
+                setEditingQuote(false);
+              }).catch(e => {
+                console.error('Update quote failed:', e);
+                Alert.alert('Error', 'Failed to update quote.');
+                setEditedQuoteText(currentQuoteText);
+                setEditingQuote(false);
+              });
             }
           }
         ]
@@ -86,8 +96,8 @@ export default function QuoteDetailScreen() {
     }
   };
 
-  const startEditingEvent = (event: typeof TIMELINE_EVENTS[0]) => {
-    setEditedEventContent(event.content);
+  const startEditingEvent = (event: any) => {
+    setEditedEventContent(event.text);
     setEditingEventId(event.id);
 
     setTimeout(() => {
@@ -97,10 +107,10 @@ export default function QuoteDetailScreen() {
     }, 150);
   };
 
-  const handleEventBlur = (event: typeof TIMELINE_EVENTS[0]) => {
-    if (editedEventContent !== event.content) {
+  const handleEventBlur = (event: any) => {
+    if (editedEventContent !== event.text) {
       Alert.alert(
-        'Do you want to edit?',
+        'Do you want to edit or delete?',
         '',
         [
           {
@@ -114,12 +124,28 @@ export default function QuoteDetailScreen() {
             text: 'OK',
             onPress: () => {
               if (!editedEventContent.trim()) {
-                Alert.alert('Error', 'Thought cannot be empty.');
-                setEditingEventId(null);
+                Alert.alert('Delete Thought', 'Do you want to delete this thought?', [
+                  { text: 'Cancel', style: 'cancel', onPress: () => setEditingEventId(null) },
+                  { text: 'Delete', style: 'destructive', onPress: () => {
+                      apiThoughts.deleteThought(event.id).then(() => {
+                         setEvents(prev => prev.filter(e => e.id !== event.id));
+                         setEditingEventId(null);
+                      }).catch(e => {
+                        Alert.alert('Error', 'Failed to delete thought.');
+                        setEditingEventId(null);
+                      });
+                  }}
+                ]);
                 return;
               }
-              setEvents(prev => prev.map(e => e.id === event.id ? { ...e, content: editedEventContent } : e));
-              setEditingEventId(null);
+              apiThoughts.updateThought(event.id, editedEventContent).then(() => {
+                setEvents(prev => prev.map(e => e.id === event.id ? { ...e, text: editedEventContent } : e));
+                setEditingEventId(null);
+              }).catch(e => {
+                console.error('Update thought failed:', e);
+                Alert.alert('Error', 'Failed to update thought.');
+                setEditingEventId(null);
+              });
             }
           }
         ]
@@ -152,20 +178,29 @@ export default function QuoteDetailScreen() {
       'Choose an action',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete Quote', onPress: () => Alert.alert('Deleted! (Dummy)', '', [{ text: 'OK', onPress: () => router.back() }]), style: 'destructive' }
+        { text: 'Delete Quote', onPress: () => {
+            apiQuotes.deleteQuote(Number(quoteIdStr)).then(() => router.back()).catch(e => Alert.alert('Error', 'Failed to delete quote.'));
+          }, style: 'destructive' }
       ]
     );
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!thought.trim()) {
       Alert.alert('Empty Thought', 'Please type something before sending.');
       return;
     }
-    Alert.alert('Success', 'Thought added! (Dummy)', [
-      { text: 'OK', onPress: () => setThought('') }
-    ]);
+    try {
+      await apiThoughts.createThought({ quote_id: Number(quoteIdStr), text: thought.trim() });
+      setThought('');
+      fetchData();
+    } catch(e) {
+      console.error('Failed to create thought', e);
+      Alert.alert('Error', 'Failed to add thought.');
+    }
   };
+
+  if (!quote) return <View style={[styles.container, { paddingTop: insets.top }]}><Text>Loading...</Text></View>;
 
   return (
     <View style={[styles.container, { paddingBottom: keyboardHeight }]}>
@@ -196,7 +231,7 @@ export default function QuoteDetailScreen() {
         {/* Quote Hero Section */}
         <View style={styles.heroSection}>
           <View style={styles.heroHeader}>
-            <Text style={styles.pageNumberText}>PAGE 112</Text>
+            <Text style={styles.pageNumberText}>{quote?.page_number ? `PAGE ${quote.page_number}` : ''}</Text>
             {editingQuote ? (
               <TouchableOpacity style={styles.editActionBtn} onPress={() => Keyboard.dismiss()}>
                 <MaterialIcons name="check" size={20} color="#1754cf" />
@@ -263,7 +298,7 @@ export default function QuoteDetailScreen() {
                   {/* Timeline Node */}
                   <View style={styles.timelineNodeContainer}>
                     <View style={styles.timelineNode}>
-                      <MaterialIcons name={event.icon as any} size={16} color="#64748b" />
+                      <MaterialIcons name={'chat-bubble-outline'} size={16} color="#64748b" />
                     </View>
                   </View>
 
@@ -290,7 +325,7 @@ export default function QuoteDetailScreen() {
                             key={`event-view-${event.id}`}
                             style={styles.eventContent}
                             multiline
-                            value={event.content}
+                            value={event.text}
                             editable={false}
                             scrollEnabled={false}
                           />
@@ -310,9 +345,9 @@ export default function QuoteDetailScreen() {
                       </View>
                       
                       <View style={styles.eventFooter}>
-                        <Text style={styles.eventDate}>{event.date}</Text>
+                        <Text style={styles.eventDate}>{new Date(event.created_at).toLocaleDateString()}</Text>
                         <View style={styles.eventDot} />
-                        <Text style={styles.eventDate}>{event.time}</Text>
+                        <Text style={styles.eventDate}>{new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                       </View>
                     </View>
                   </View>

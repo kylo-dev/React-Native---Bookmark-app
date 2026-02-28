@@ -1,12 +1,10 @@
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, Modal, Platform } from 'react-native';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { BOOKS } from '../../constants/dummy';
-
-const { width } = Dimensions.get('window');
+import { useRouter, useFocusEffect } from 'expo-router';
+import { apiBooks, apiQuotes } from '../../lib/api';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const FULL_MONTHS = [
@@ -32,8 +30,46 @@ export default function StatsScreen() {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [tempYear, setTempYear] = useState(currentDate.getFullYear());
 
-    // Read 상태인 책이나 임의의 책 목록을 가져옴 (더미 데이터)
-    const readBooks = BOOKS.slice(0, 4);
+    const [readBooks, setReadBooks] = useState<any[]>([]);
+    const [stats, setStats] = useState({ totalRead: 0, totalQuotes: 0, totalThoughts: 0 });
+
+    const fetchStats = async () => {
+        try {
+            const allBooks = await apiBooks.getBooks();
+            const allQuotes = await apiQuotes.getAllQuotes();
+            
+            const targetMonth = currentDate.getMonth();
+            const targetYear = currentDate.getFullYear();
+            
+            // Filter books by "FINISHED" and created_at matching the month
+            const filteredBooks = allBooks.filter(b => {
+                const d = new Date(b.created_at);
+                return d.getMonth() === targetMonth && d.getFullYear() === targetYear && b.status === 'FINISHED';
+            });
+
+            const monthQuotesCount = allQuotes.filter(q => {
+                const d = new Date(q.created_at);
+                return d.getMonth() === targetMonth && d.getFullYear() === targetYear;
+            }).length;
+
+            const tCount = allQuotes.reduce((acc, q) => acc + (q.thoughts?.[0]?.count || 0), 0);
+
+            setReadBooks(filteredBooks);
+            setStats({
+                totalRead: filteredBooks.length,
+                totalQuotes: monthQuotesCount,
+                totalThoughts: tCount
+            });
+        } catch(e) {
+            console.error('Failed to fetch stats', e);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchStats();
+        }, [currentDate])
+    );
 
     const handlePrevMonth = () => {
         setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -94,7 +130,7 @@ export default function StatsScreen() {
                         <View>
                             <Text style={styles.statsCardTitle}>Total Books Read</Text>
                             <View style={styles.statsCardValueRow}>
-                                <Text style={styles.statsCardValue}>4</Text>
+                                <Text style={styles.statsCardValue}>{stats.totalRead}</Text>
                                 <Text style={styles.statsCardUnit}>books</Text>
                             </View>
                         </View>
@@ -106,11 +142,11 @@ export default function StatsScreen() {
                     <View style={styles.statsCardFooter}>
                         <View style={styles.statsCardFooterItem}>
                             <Text style={styles.statsCardFooterLabel}>Total Quotes</Text>
-                            <Text style={styles.statsCardFooterValue}>45</Text>
+                            <Text style={styles.statsCardFooterValue}>{stats.totalQuotes}</Text>
                         </View>
                         <View style={styles.statsCardFooterItem}>
                             <Text style={styles.statsCardFooterLabel}>Total Thoughts</Text>
-                            <Text style={styles.statsCardFooterValue}>12</Text>
+                            <Text style={styles.statsCardFooterValue}>{stats.totalThoughts}</Text>
                         </View>
                     </View>
                 </View>
@@ -121,15 +157,17 @@ export default function StatsScreen() {
                 </View>
 
                 <View style={styles.bookList}>
-                    {readBooks.map((book) => (
+                    {readBooks.map((book) => {
+                        const qCount = book.quotes?.[0]?.count || 0;
+                        return (
                         <TouchableOpacity
-                            key={book.id}
+                            key={book.id.toString()}
                             style={styles.bookCard}
                             activeOpacity={0.9}
-                            onPress={() => router.push({ pathname: '/book/[id]', params: { id: book.id } })}
+                            onPress={() => router.push({ pathname: '/book/[id]', params: { id: book.id.toString() } })}
                         >
                             <View style={styles.bookCoverWrapper}>
-                                <Image source={{ uri: book.coverUrl }} style={styles.bookCover} />
+                                <Image source={book.cover_url ? { uri: book.cover_url } : undefined} style={styles.bookCover} />
                                 <View style={styles.bookCoverGradient} />
                             </View>
 
@@ -160,17 +198,13 @@ export default function StatsScreen() {
                                 <View style={styles.bookStatsRow}>
                                     <View style={styles.bookStatItem}>
                                         <MaterialIcons name="format-quote" size={14} color="#306ee8" />
-                                        <Text style={styles.bookStatText}>{book.quotesCount}</Text>
-                                    </View>
-                                    <View style={styles.bookStatDivider} />
-                                    <View style={styles.bookStatItem}>
-                                        <MaterialIcons name="edit-note" size={14} color="#306ee8" />
-                                        <Text style={styles.bookStatText}>{Math.floor(book.quotesCount / 3) + 1}</Text>
+                                        <Text style={styles.bookStatText}>{qCount}</Text>
                                     </View>
                                 </View>
                             </View>
                         </TouchableOpacity>
-                    ))}
+                        );
+                    })}
                 </View>
             </ScrollView>
 

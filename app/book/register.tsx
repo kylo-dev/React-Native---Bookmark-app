@@ -5,19 +5,34 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
-import { BOOKS } from '../../constants/dummy';
+import { apiBooks } from '../../lib/api';
+import { useEffect } from 'react';
 
 export default function RegisterBookScreen() {
   const router = useRouter();
   const { bookId } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   
-  const existingBook = bookId ? BOOKS.find(b => b.id === bookId) : null;
-  const isEditMode = !!existingBook;
+  const bookIdStr = Array.isArray(bookId) ? bookId[0] : bookId;
+  const isEditMode = !!bookIdStr;
 
-  const [title, setTitle] = useState(existingBook?.title || '');
-  const [author, setAuthor] = useState(existingBook?.author || '');
-  const [coverImage, setCoverImage] = useState<string | null>(existingBook?.coverUrl || null);
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [status, setStatus] = useState<any>('TO_READ');
+  
+  useEffect(() => {
+    if (isEditMode && bookIdStr) {
+      apiBooks.getBookById(Number(bookIdStr))
+        .then(data => {
+          setTitle(data.title);
+          setAuthor(data.author);
+          setCoverImage(data.cover_url || null);
+          setStatus(data.status);
+        })
+        .catch(e => console.error('Fetch book for edit failed:', e));
+    }
+  }, [bookIdStr, isEditMode]);
 
   const handleImageSelection = async (type: 'camera' | 'gallery') => {
     try {
@@ -67,13 +82,40 @@ export default function RegisterBookScreen() {
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim() || !author.trim()) {
       Alert.alert('Required Fields', 'Please enter both book title and author.');
       return;
     }
-    Alert.alert('Success', isEditMode ? 'Book updated! (Dummy)' : 'Book registered! (Dummy)', [
-      { text: 'OK', onPress: () => router.back() }
+    
+    try {
+      const payload = {
+        title: title.trim(),
+        author: author.trim(),
+        cover_url: coverImage,
+        status: status,
+      };
+      
+      if (isEditMode) {
+        await apiBooks.updateBook(Number(bookIdStr), payload);
+        Alert.alert('Success', 'Book updated!', [{ text: 'OK', onPress: () => router.back() }]);
+      } else {
+        await apiBooks.createBook(payload);
+        Alert.alert('Success', 'Book registered!', [{ text: 'OK', onPress: () => router.back() }]);
+      }
+    } catch(e) {
+      console.error('Save failed:', e);
+      Alert.alert('Error', 'Failed to save book.');
+    }
+  };
+
+  const showStatusOptions = () => {
+    Alert.alert('Status', 'Select a status', [
+      { text: 'To Read', onPress: () => setStatus('TO_READ') },
+      { text: 'Reading', onPress: () => setStatus('READING') },
+      { text: 'Finished', onPress: () => setStatus('FINISHED') },
+      { text: 'Cancelled', onPress: () => setStatus('CANCELLED') },
+      { text: 'Cancel', style: 'cancel' }
     ]);
   };
 
@@ -149,8 +191,8 @@ export default function RegisterBookScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Status</Text>
               {/* Simulated Select Dropdown */}
-              <TouchableOpacity style={styles.selectInput} activeOpacity={0.8}>
-                <Text style={styles.selectText}>{existingBook?.status || 'Reading'}</Text>
+              <TouchableOpacity style={styles.selectInput} activeOpacity={0.8} onPress={showStatusOptions}>
+                <Text style={styles.selectText}>{status === 'TO_READ' ? 'To Read' : status === 'READING' ? 'Reading' : status === 'FINISHED' ? 'Finished' : 'Cancelled'}</Text>
                 <MaterialIcons name="expand-more" size={20} color="#94a3b8" />
               </TouchableOpacity>
             </View>

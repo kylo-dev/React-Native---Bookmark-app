@@ -2,12 +2,28 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from '
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { QUOTES, BOOKS } from '../../constants/dummy';
+import { useState, useCallback } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { apiQuotes } from '../../lib/api';
 
 export default function LogScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  const [quotes, setQuotes] = useState<any[]>([]);
+
+  const fetchQuotes = async () => {
+    try {
+      const data = await apiQuotes.getAllQuotes();
+      setQuotes(data || []);
+    } catch(e) { console.error('Failed to fetch all quotes', e); }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchQuotes();
+    }, [])
+  );
 
   const handleMorePress = () => {
     // Dummy action
@@ -38,7 +54,7 @@ export default function LogScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.listContainer}>
-          {QUOTES.length === 0 ? (
+          {quotes.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <MaterialIcons name="history" size={64} color="#cbd5e1" />
               <Text style={styles.emptyStateTitle}>아직 활동 기록이 없습니다</Text>
@@ -47,22 +63,24 @@ export default function LogScreen() {
               </Text>
             </View>
           ) : (
-            QUOTES.map((quote, index) => {
-              // 더미 책 데이터 매핑
-              const book = BOOKS[index % BOOKS.length];
-              
+            quotes.map((quote) => {
+              const book = quote.book || {};
               return (
                 <TouchableOpacity 
-                  key={quote.id} 
+                  key={quote.id.toString()} 
                   style={styles.card}
                   activeOpacity={0.9}
-                  onPress={() => router.push({ pathname: '/book/quote', params: { bookId: book.id, quoteId: quote.id } })}
+                  onPress={() => router.push({ pathname: '/book/quote', params: { bookId: quote.book_id.toString(), quoteId: quote.id.toString() } })}
                 >
                   <View style={styles.cardHeader}>
                     <View style={styles.bookTag}>
-                      <Text style={styles.bookTagText}>{book.title}</Text>
+                      <Text style={styles.bookTagText}>{book.title || 'Unknown Title'}</Text>
                     </View>
-                    <MaterialIcons name="favorite" size={20} color="#ec4899" />
+                    {quote.is_favorite ? (
+                      <MaterialIcons name="favorite" size={20} color="#ec4899" />
+                    ) : (
+                      <MaterialIcons name="favorite-border" size={20} color="#cbd5e1" />
+                    )}
                   </View>
                   
                   <Text style={styles.quoteText} numberOfLines={3}>
@@ -70,8 +88,8 @@ export default function LogScreen() {
                   </Text>
                   
                   <View style={styles.cardFooter}>
-                    <Text style={styles.footerText}>{book.author}</Text>
-                    <Text style={styles.footerText}>{quote.date}</Text>
+                    <Text style={styles.footerText}>{book.author || 'Unknown Author'}</Text>
+                    <Text style={styles.footerText}>{new Date(quote.created_at).toLocaleDateString()}</Text>
                   </View>
                 </TouchableOpacity>
               );

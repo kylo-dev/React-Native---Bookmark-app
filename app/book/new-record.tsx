@@ -16,7 +16,7 @@ import {
 import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { BOOKS } from '../../constants/dummy';
+import { apiBooks, apiQuotes } from '../../lib/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -28,8 +28,11 @@ export default function NewRecordScreen() {
     const { bookId } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
 
-    const book = BOOKS.find((b) => b.id === bookId) || BOOKS[0];
+    const bookIdStr = Array.isArray(bookId) ? bookId[0] : (bookId as string);
+
+    const [book, setBook] = useState<any>(null);
     const [text, setText] = useState('');
+    const [pageNumber, setPageNumber] = useState('');
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [tags, setTags] = useState<string[]>([]);
     const [isTagging, setIsTagging] = useState(false);
@@ -37,6 +40,14 @@ export default function NewRecordScreen() {
     const [isScanning, setIsScanning] = useState(false);
     const [isOcrModalVisible, setIsOcrModalVisible] = useState(false);
     const [scannedFullText, setScannedFullText] = useState('');
+
+    useEffect(() => {
+        if (bookIdStr) {
+            apiBooks.getBookById(Number(bookIdStr))
+                .then(data => setBook(data))
+                .catch(e => console.error('Failed to fetch book', e));
+        }
+    }, [bookIdStr]);
 
     const handleScanText = async () => {
         try {
@@ -85,14 +96,27 @@ export default function NewRecordScreen() {
         };
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!text.trim()) {
             Alert.alert('Required', 'Please enter a quote to remember.');
             return;
         }
-        const tagString = tags.length > 0 ? `\nTags: ${tags.map((t) => '#' + t).join(', ')}` : '';
-        Alert.alert('Success', `Quote recorded! (Dummy)${tagString}`, [{ text: 'OK', onPress: () => router.back() }]);
+        try {
+            await apiQuotes.createQuote({
+                book_id: Number(bookIdStr),
+                text: text.trim(),
+                page_number: pageNumber ? Number(pageNumber) : null,
+                tags: tags,
+                is_favorite: false,
+            });
+            Alert.alert('Success', `Quote recorded!`, [{ text: 'OK', onPress: () => router.back() }]);
+        } catch(e) {
+            console.error('Failed to save quote', e);
+            Alert.alert('Error', 'Failed to save quote.');
+        }
     };
+
+    if (!book) return <View style={[styles.container, { paddingTop: insets.top }]}><Text>Loading...</Text></View>;
 
     return (
         <View style={[styles.container, { paddingBottom: keyboardHeight }]}>
@@ -121,7 +145,7 @@ export default function NewRecordScreen() {
                 {/* Book Info Card */}
                 <View style={styles.bookInfoCard}>
                     <View style={styles.thumbnailWrapper}>
-                        <Image source={{ uri: book.coverUrl }} style={styles.thumbnail} />
+                        <Image source={book?.cover_url ? { uri: book.cover_url } : undefined} style={styles.thumbnail} />
                     </View>
                     <View style={styles.bookDetails}>
                         <Text style={styles.bookTitle} numberOfLines={1}>
@@ -156,6 +180,8 @@ export default function NewRecordScreen() {
                         placeholderTextColor="#94a3b8"
                         keyboardType="number-pad"
                         maxLength={4}
+                        value={pageNumber}
+                        onChangeText={setPageNumber}
                     />
                 </View>
 

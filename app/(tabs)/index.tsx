@@ -2,9 +2,10 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList, 
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { apiBooks } from '../../lib/api';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { BOOKS } from '../../constants/dummy';
 
 const { width } = Dimensions.get('window');
 const COLUMN_GAP = 16;
@@ -17,19 +18,33 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('All Books');
+  const [books, setBooks] = useState<any[]>([]);
 
-  const filteredBooks = BOOKS.filter(book => 
-    activeFilter === 'All Books' ? true : book.status === activeFilter
+  const fetchBooks = async (filter: string) => {
+    try {
+      const data = await apiBooks.getBooks(filter);
+      setBooks(data || []);
+    } catch (e) {
+      console.error('Fetch books failed:', e);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchBooks(activeFilter);
+    }, [activeFilter])
   );
 
-  const renderBookItem = ({ item }: { item: typeof BOOKS[0] }) => (
+  const renderBookItem = ({ item }: { item: any }) => {
+    const quotesCount = item.quotes?.[0]?.count || 0;
+    return (
     <TouchableOpacity 
       style={styles.cardContainer} 
       activeOpacity={0.8}
-      onPress={() => router.push({ pathname: '/book/[id]', params: { id: item.id } })}
+      onPress={() => router.push({ pathname: '/book/[id]', params: { id: item.id.toString() } })}
     >
       <View style={styles.coverWrapper}>
-        <Image style={styles.coverImage} source={{ uri: item.coverUrl }} />
+        <Image style={styles.coverImage} source={item.cover_url ? { uri: item.cover_url } : undefined} />
         <View style={styles.coverGradient} />
 
       </View>
@@ -38,19 +53,20 @@ export default function HomeScreen() {
         <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
         <Text style={styles.cardAuthor} numberOfLines={1}>{item.author}</Text>
         
-        <View style={[styles.quoteBadge, item.quotesCount >= 10 && styles.quoteBadgeActive]}>
+        <View style={[styles.quoteBadge, quotesCount >= 10 && styles.quoteBadgeActive]}>
           <MaterialIcons 
             name="format-quote" 
             size={14} 
-            color={item.quotesCount >= 10 ? '#306ee8' : '#64748b'} 
+            color={quotesCount >= 10 ? '#306ee8' : '#64748b'} 
           />
-          <Text style={[styles.quoteText, item.quotesCount >= 10 && styles.quoteTextActive]}>
-            {item.quotesCount} quotes
+          <Text style={[styles.quoteText, quotesCount >= 10 && styles.quoteTextActive]}>
+            {quotesCount} quotes
           </Text>
         </View>
       </View>
     </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -93,12 +109,12 @@ export default function HomeScreen() {
         </View>
 
         <FlatList
-          data={filteredBooks}
+          data={books}
           renderItem={renderBookItem}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.id.toString()}
           numColumns={2}
-          contentContainerStyle={[styles.gridParams, filteredBooks.length === 0 && styles.emptyGridParams]}
-          columnWrapperStyle={filteredBooks.length > 0 ? styles.gridRow : undefined}
+          contentContainerStyle={[styles.gridParams, books.length === 0 && styles.emptyGridParams]}
+          columnWrapperStyle={books.length > 0 ? styles.gridRow : undefined}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyStateContainer}>

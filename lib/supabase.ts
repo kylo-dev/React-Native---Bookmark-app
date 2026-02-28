@@ -13,4 +13,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: false, // React Native 환경이므로 false
   },
+  db: {
+    schema: 'bookmark_dev',
+  },
 });
