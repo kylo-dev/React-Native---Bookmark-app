@@ -4,23 +4,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { apiBooks, apiQuotes } from '../../lib/api';
+import { apiBooks } from '../../features/book/api/api';
+import { apiQuotes } from '../../features/quote/api/api';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const FULL_MONTHS = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-];
+import { MONTHS, FULL_MONTHS } from '../../constants/date';
 
 export default function StatsScreen() {
     const insets = useSafeAreaInsets();

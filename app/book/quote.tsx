@@ -4,7 +4,8 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { apiQuotes, apiThoughts } from '../../lib/api';
+import { apiQuotes } from '../../features/quote/api/api';
+import { apiThoughts } from '../../features/thought/api/api';
 
 const { width } = Dimensions.get('window');
 

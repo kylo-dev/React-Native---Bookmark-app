@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useCallback } from 'react';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { apiQuotes } from '../../lib/api';
+import { apiQuotes } from '../../features/quote/api/api';
 
 export default function LogScreen() {
   const insets = useSafeAreaInsets();

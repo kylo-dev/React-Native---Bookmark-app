@@ -16,7 +16,8 @@ import {
 import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { apiBooks, apiQuotes } from '../../lib/api';
+import { apiBooks } from '../../features/book/api/api';
+import { apiQuotes } from '../../features/quote/api/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
