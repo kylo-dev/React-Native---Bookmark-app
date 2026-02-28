@@ -17,11 +17,11 @@ export const apiBooks = {
 
     const { data, error } = await query.order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
   getBookById: async (id: number) => {
-    const { data, error } = await supabase.from('books').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('books').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },

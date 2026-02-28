@@ -9,7 +9,7 @@ export const apiQuotes = {
       .eq('book_id', bookId)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
   getAllQuotes: async () => {
@@ -17,11 +17,11 @@ export const apiQuotes = {
       .select(`*, book:books(*), thoughts(count)`)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
   getQuoteById: async (id: number) => {
-    const { data, error } = await supabase.from('quotes').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('quotes').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },

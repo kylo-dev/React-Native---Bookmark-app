@@ -9,7 +9,7 @@ export const apiThoughts = {
       .eq('quote_id', quoteId)
       .order('created_at', { ascending: true }); // 타임라인형이므로 오름차순
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
   createThought: async (input: ThoughtInput) => {
