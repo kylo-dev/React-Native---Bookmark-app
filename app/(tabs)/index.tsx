@@ -8,6 +8,7 @@ import {
     FlatList,
     Dimensions,
     Platform,
+    TextInput,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -27,6 +28,16 @@ export default function HomeScreen() {
     const router = useRouter();
     const [activeFilter, setActiveFilter] = useState('all');
     const [books, setBooks] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearchMode, setIsSearchMode] = useState(false);
+
+    const filteredBooks = searchQuery.trim()
+        ? books.filter(
+              (b) =>
+                  b.title?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+                  b.author?.toLowerCase().includes(searchQuery.toLowerCase().trim()),
+          )
+        : books;
 
     const fetchBooks = async (filter: string | undefined) => {
         try {
@@ -85,12 +96,37 @@ export default function HomeScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-                <View>
-                    <Text style={styles.headerTitle}>My Library</Text>
-                </View>
-                <TouchableOpacity style={styles.searchBtn}>
-                    <MaterialIcons name="search" size={24} color="#475569" />
-                </TouchableOpacity>
+                {isSearchMode ? (
+                    <View style={styles.searchBarContainer}>
+                        <MaterialIcons name="search" size={22} color="#94a3b8" style={styles.searchIcon} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="책 제목 또는 저자로 검색"
+                            placeholderTextColor="#94a3b8"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            autoFocus
+                        />
+                        <TouchableOpacity
+                            onPress={() => {
+                                setIsSearchMode(false);
+                                setSearchQuery('');
+                            }}
+                            style={styles.searchCloseBtn}
+                        >
+                            <MaterialIcons name="close" size={22} color="#64748b" />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <>
+                        <View>
+                            <Text style={styles.headerTitle}>My Library</Text>
+                        </View>
+                        <TouchableOpacity style={styles.searchBtn} onPress={() => setIsSearchMode(true)}>
+                            <MaterialIcons name="search" size={24} color="#475569" />
+                        </TouchableOpacity>
+                    </>
+                )}
             </View>
 
             {/* Main Content */}
@@ -120,18 +156,30 @@ export default function HomeScreen() {
                 </View>
 
                 <FlatList
-                    data={books}
+                    data={filteredBooks}
                     renderItem={renderBookItem}
                     keyExtractor={(item) => item.id.toString()}
                     numColumns={2}
-                    contentContainerStyle={[styles.gridParams, books.length === 0 && styles.emptyGridParams]}
-                    columnWrapperStyle={books.length > 0 ? styles.gridRow : undefined}
+                    contentContainerStyle={[styles.gridParams, filteredBooks.length === 0 && styles.emptyGridParams]}
+                    columnWrapperStyle={filteredBooks.length > 0 ? styles.gridRow : undefined}
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.emptyStateContainer}>
-                            <MaterialIcons name="library-books" size={64} color="#cbd5e1" />
-                            <Text style={styles.emptyStateTitle}>아직 등록된 책이 없습니다</Text>
-                            <Text style={styles.emptyStateDesc}>+ 버튼을 눌러 새로운 책을 추가해보세요!</Text>
+                            <MaterialIcons
+                                name={searchQuery.trim() ? 'search-off' : 'library-books'}
+                                size={64}
+                                color="#cbd5e1"
+                            />
+                            <Text style={styles.emptyStateTitle}>
+                                {searchQuery.trim()
+                                    ? '검색 결과가 없습니다'
+                                    : '아직 등록된 책이 없습니다'}
+                            </Text>
+                            <Text style={styles.emptyStateDesc}>
+                                {searchQuery.trim()
+                                    ? '다른 검색어로 시도해보세요'
+                                    : '+ 버튼을 눌러 새로운 책을 추가해보세요!'}
+                            </Text>
                         </View>
                     }
                 />
@@ -179,6 +227,27 @@ const styles = StyleSheet.create({
         backgroundColor: '#e2e8f0',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    searchBarContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 44,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 22,
+        paddingHorizontal: 16,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#0f172a',
+        paddingVertical: 0,
+    },
+    searchCloseBtn: {
+        padding: 4,
     },
     main: {
         flex: 1,
