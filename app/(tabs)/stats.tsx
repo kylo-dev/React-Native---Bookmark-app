@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, Modal, Platform } from 'react-native';
-import { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, Platform } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -7,7 +7,8 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { apiBooks } from '../../features/book/api/api';
 import { apiQuotes } from '../../features/quote/api/api';
 
-import { MONTHS, FULL_MONTHS } from '../../constants/date';
+import { MONTHS, FULL_MONTHS, formatMonthYear } from '../../constants/date';
+import { isFutureMonth, isMonthAtOrAfterCurrent } from '@/utils/date';
 
 export default function StatsScreen() {
     const insets = useSafeAreaInsets();
@@ -20,43 +21,39 @@ export default function StatsScreen() {
     const [readBooks, setReadBooks] = useState<any[]>([]);
     const [stats, setStats] = useState({ totalRead: 0, totalQuotes: 0, totalThoughts: 0 });
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
-            const allBooks = await apiBooks.getBooks();
-            const allQuotes = await apiQuotes.getAllQuotes();
-            
             const targetMonth = currentDate.getMonth();
             const targetYear = currentDate.getFullYear();
-            
-            // Filter books by "FINISHED" and created_at matching the month
-            const filteredBooks = allBooks.filter(b => {
-                const d = new Date(b.created_at);
-                return d.getMonth() === targetMonth && d.getFullYear() === targetYear && b.status === 'FINISHED';
-            });
 
-            const monthQuotesCount = allQuotes.filter(q => {
-                const d = new Date(q.created_at);
-                return d.getMonth() === targetMonth && d.getFullYear() === targetYear;
-            }).length;
+            const [filteredBooks, monthQuotes] = await Promise.all([
+                apiBooks.getBooksByMonth(targetYear, targetMonth),
+                apiQuotes.getQuotesByMonth(targetYear, targetMonth),
+            ]);
 
-            const tCount = allQuotes.reduce((acc, q) => acc + (q.thoughts?.[0]?.count || 0), 0);
+            const monthQuotesCount = monthQuotes.length;
+            const tCount = monthQuotes.reduce((acc, q) => acc + (q.thoughts?.[0]?.count ?? 0), 0);
 
             setReadBooks(filteredBooks);
             setStats({
                 totalRead: filteredBooks.length,
                 totalQuotes: monthQuotesCount,
-                totalThoughts: tCount
+                totalThoughts: tCount,
             });
-        } catch(e) {
+        } catch (e) {
             console.error('Failed to fetch stats', e);
         }
-    };
+    }, [currentDate]);
 
     useFocusEffect(
         useCallback(() => {
             fetchStats();
-        }, [currentDate])
+        }, [fetchStats]),
     );
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
 
     const handlePrevMonth = () => {
         setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -76,10 +73,7 @@ export default function StatsScreen() {
         setShowDatePicker(false);
     };
 
-    const today = new Date();
-    const isNextMonthDisabled =
-        currentDate.getFullYear() > today.getFullYear() ||
-        (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() >= today.getMonth());
+    const isNextMonthDisabled = isMonthAtOrAfterCurrent(currentDate.getFullYear(), currentDate.getMonth());
 
     return (
         <View style={styles.container}>
@@ -94,9 +88,7 @@ export default function StatsScreen() {
                 <TouchableOpacity style={styles.headerTitleContainer} activeOpacity={0.7} onPress={openDatePicker}>
                     <Text style={styles.headerSubtitle}>MONTHLY LOG</Text>
                     <View style={styles.headerTitleRow}>
-                        <Text style={styles.headerTitle}>
-                            {FULL_MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
-                        </Text>
+                        <Text style={styles.headerTitle}>{formatMonthYear(currentDate)}</Text>
                         <MaterialIcons name="expand-more" size={20} color="#0f172a" style={{ opacity: 0.5 }} />
                     </View>
                 </TouchableOpacity>
@@ -140,58 +132,58 @@ export default function StatsScreen() {
 
                 {/* Read in Month Section */}
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Read in {FULL_MONTHS[currentDate.getMonth()]}</Text>
+                    <Text style={styles.sectionTitle}>{FULL_MONTHS[currentDate.getMonth()]}에 읽은 책</Text>
                 </View>
 
                 <View style={styles.bookList}>
-                    {readBooks.map((book) => {
-                        const qCount = book.quotes?.[0]?.count || 0;
-                        return (
-                        <TouchableOpacity
-                            key={book.id.toString()}
-                            style={styles.bookCard}
-                            activeOpacity={0.9}
-                            onPress={() => router.push({ pathname: '/book/[id]', params: { id: book.id.toString() } })}
-                        >
-                            <View style={styles.bookCoverWrapper}>
-                                <Image source={book.cover_url ? { uri: book.cover_url } : undefined} style={styles.bookCover} />
-                                <View style={styles.bookCoverGradient} />
-                            </View>
-
-                            <View style={styles.bookInfo}>
-                                <View>
-                                    <View style={styles.bookTitleRow}>
-                                        <Text style={styles.bookTitle} numberOfLines={1}>
-                                            {book.title}
-                                        </Text>
-                                        <MaterialIcons name="check-circle" size={16} color="#22c55e" />
+                    {readBooks.length === 0 ? (
+                        <View style={styles.emptyBookList}>
+                            <MaterialIcons name="menu-book" size={48} color="#cbd5e1" />
+                            <Text style={styles.emptyBookListText}>이 달에 읽은 책이 없습니다</Text>
+                        </View>
+                    ) : (
+                        readBooks.map((book) => {
+                            const qCount = book.quotes?.[0]?.count || 0;
+                            return (
+                                <TouchableOpacity
+                                    key={book.id.toString()}
+                                    style={styles.bookCard}
+                                    activeOpacity={0.9}
+                                    onPress={() =>
+                                        router.push({ pathname: '/book/[id]', params: { id: book.id.toString() } })
+                                    }
+                                >
+                                    <View style={styles.bookCoverWrapper}>
+                                        <Image
+                                            source={book.cover_url ? { uri: book.cover_url } : undefined}
+                                            style={styles.bookCover}
+                                        />
+                                        <View style={styles.bookCoverGradient} />
                                     </View>
-                                    <Text style={styles.bookAuthor} numberOfLines={1}>
-                                        {book.author}
-                                    </Text>
 
-                                    <View style={styles.ratingRow}>
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <MaterialIcons
-                                                key={star}
-                                                name={star <= 4 ? 'star' : 'star-border'}
-                                                size={14}
-                                                color="#facc15"
-                                            />
-                                        ))}
-                                    </View>
-                                </View>
+                                    <View style={styles.bookInfo}>
+                                        <View>
+                                            <View style={styles.bookTitleRow}>
+                                                <Text style={styles.bookTitle} numberOfLines={1}>
+                                                    {book.title}
+                                                </Text>
+                                            </View>
+                                            <Text style={styles.bookAuthor} numberOfLines={1}>
+                                                {book.author}
+                                            </Text>
+                                        </View>
 
-                                <View style={styles.bookStatsRow}>
-                                    <View style={styles.bookStatItem}>
-                                        <MaterialIcons name="format-quote" size={14} color="#306ee8" />
-                                        <Text style={styles.bookStatText}>{qCount}</Text>
+                                        <View style={styles.bookStatsRow}>
+                                            <View style={styles.bookStatItem}>
+                                                <MaterialIcons name="format-quote" size={14} color="#306ee8" />
+                                                <Text style={styles.bookStatText}>{qCount}</Text>
+                                            </View>
+                                        </View>
                                     </View>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                        );
-                    })}
+                                </TouchableOpacity>
+                            );
+                        })
+                    )}
                 </View>
             </ScrollView>
 
@@ -218,8 +210,8 @@ export default function StatsScreen() {
                             <Text style={styles.modalYearText}>{tempYear}</Text>
                             <TouchableOpacity
                                 onPress={() => setTempYear((prev) => prev + 1)}
-                                style={[styles.modalIconBtn, tempYear >= today.getFullYear() && { opacity: 0.3 }]}
-                                disabled={tempYear >= today.getFullYear()}
+                                style={[styles.modalIconBtn, tempYear >= new Date().getFullYear() && { opacity: 0.3 }]}
+                                disabled={tempYear >= new Date().getFullYear()}
                             >
                                 <MaterialIcons name="chevron-right" size={28} color="#0f172a" />
                             </TouchableOpacity>
@@ -229,9 +221,7 @@ export default function StatsScreen() {
                             {MONTHS.map((month, index) => {
                                 const isSelected =
                                     currentDate.getFullYear() === tempYear && currentDate.getMonth() === index;
-                                const isFutureMonth =
-                                    tempYear > today.getFullYear() ||
-                                    (tempYear === today.getFullYear() && index > today.getMonth());
+                                const disabled = isFutureMonth(tempYear, index);
 
                                 return (
                                     <TouchableOpacity
@@ -239,16 +229,16 @@ export default function StatsScreen() {
                                         style={[
                                             styles.monthItem,
                                             isSelected && styles.monthItemActive,
-                                            isFutureMonth && styles.monthItemDisabled,
+                                            disabled && styles.monthItemDisabled,
                                         ]}
                                         onPress={() => handleSelectMonth(index)}
-                                        disabled={isFutureMonth}
+                                        disabled={disabled}
                                     >
                                         <Text
                                             style={[
                                                 styles.monthText,
                                                 isSelected && styles.monthTextActive,
-                                                isFutureMonth && styles.monthTextDisabled,
+                                                disabled && styles.monthTextDisabled,
                                             ]}
                                         >
                                             {month}
@@ -327,15 +317,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 8,
     },
-    statsCardBgDecoration: {
-        position: 'absolute',
-        top: -40,
-        right: -40,
-        width: 128,
-        height: 128,
-        borderRadius: 64,
-        backgroundColor: 'rgba(48, 110, 232, 0.05)',
-    },
     statsCardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -403,13 +384,18 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#0f172a',
     },
-    viewAllText: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#306ee8',
-    },
     bookList: {
         gap: 16,
+    },
+    emptyBookList: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 48,
+    },
+    emptyBookListText: {
+        fontSize: 15,
+        color: '#94a3b8',
+        marginTop: 12,
     },
     bookCard: {
         flexDirection: 'row',
@@ -462,11 +448,6 @@ const styles = StyleSheet.create({
         color: '#64748b',
         marginTop: 4,
     },
-    ratingRow: {
-        flexDirection: 'row',
-        marginTop: 8,
-        gap: 2,
-    },
     bookStatsRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -486,11 +467,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '500',
         color: '#0f172a',
-    },
-    bookStatDivider: {
-        width: 1,
-        height: 12,
-        backgroundColor: '#cbd5e1',
     },
 
     /* Modal Styles */

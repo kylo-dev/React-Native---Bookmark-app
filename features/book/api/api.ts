@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { BookInput } from "../dto/dto";
 import { getUserId } from '@/lib/auth';
+import { getMonthDateRange } from '@/utils/date';
 
 // ------------------------------
 // Books API
@@ -14,6 +15,20 @@ export const apiBooks = {
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  /** 해당 년월에 생성된 책 조회 (TO_READ 제외, 날짜 기준, 로컬 타임존) */
+  getBooksByMonth: async (year: number, month: number) => {
+    const { start, end } = getMonthDateRange(year, month);
+    const { data, error } = await supabase
+      .from('books')
+      .select(`*, quotes(count)`)
+      .neq('status', 'TO_READ')
+      .gte('created_at', start)
+      .lt('created_at', end)
+      .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
   },

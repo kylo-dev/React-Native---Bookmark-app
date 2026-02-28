@@ -13,3 +13,8 @@ export const FULL_MONTHS = [
     'November',
     'December',
 ];
+
+/** 날짜를 "February 2026" 형태로 포맷 */
+export function formatMonthYear(date: Date): string {
+    return `${FULL_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+}
