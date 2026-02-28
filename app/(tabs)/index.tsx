@@ -22,6 +22,10 @@ const { width } = Dimensions.get('window');
 const COLUMN_GAP = 16;
 const PADDING_HORIZONTAL = 16;
 const CARD_WIDTH = ((width - PADDING_HORIZONTAL * 2 - COLUMN_GAP) / 2) * 0.92;
+const LIST_COVER_WIDTH = 56;
+const LIST_COVER_HEIGHT = LIST_COVER_WIDTH * 1.45;
+
+type ViewMode = 'grid' | 'list';
 
 export default function HomeScreen() {
     const insets = useSafeAreaInsets();
@@ -30,6 +34,7 @@ export default function HomeScreen() {
     const [books, setBooks] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchMode, setIsSearchMode] = useState(false);
+    const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
     const filteredBooks = searchQuery.trim()
         ? books.filter(
@@ -54,7 +59,7 @@ export default function HomeScreen() {
         }, [activeFilter]),
     );
 
-    const renderBookItem = ({ item }: { item: any }) => {
+    const renderBookItemGrid = ({ item }: { item: any }) => {
         const quotesCount = item.quotes?.[0]?.count || 0;
         return (
             <TouchableOpacity
@@ -86,6 +91,46 @@ export default function HomeScreen() {
                         </Text>
                     </View>
                 </View>
+            </TouchableOpacity>
+        );
+    };
+
+    const renderBookItemList = ({ item }: { item: any }) => {
+        const quotesCount = item.quotes?.[0]?.count || 0;
+        return (
+            <TouchableOpacity
+                style={styles.listRow}
+                activeOpacity={0.8}
+                onPress={() => router.push({ pathname: '/book/[id]', params: { id: item.id.toString() } })}
+            >
+                <View style={styles.listCoverWrapper}>
+                    <Image
+                        style={styles.listCoverImage}
+                        source={item.cover_url ? { uri: item.cover_url } : undefined}
+                    />
+                    <View style={styles.coverGradient} />
+                </View>
+
+                <View style={styles.listCardInfo}>
+                    <Text style={styles.listCardTitle} numberOfLines={1}>
+                        {item.title}
+                    </Text>
+                    <Text style={styles.listCardAuthor} numberOfLines={1}>
+                        {item.author}
+                    </Text>
+                    <View style={[styles.quoteBadge, quotesCount >= 10 && styles.quoteBadgeActive]}>
+                        <MaterialIcons
+                            name="format-quote"
+                            size={12}
+                            color={quotesCount >= 10 ? '#306ee8' : '#64748b'}
+                        />
+                        <Text style={[styles.quoteText, quotesCount >= 10 && styles.quoteTextActive]}>
+                            {quotesCount} quotes
+                        </Text>
+                    </View>
+                </View>
+
+                <MaterialIcons name="chevron-right" size={24} color="#cbd5e1" style={styles.listArrow} />
             </TouchableOpacity>
         );
     };
@@ -122,9 +167,21 @@ export default function HomeScreen() {
                         <View>
                             <Text style={styles.headerTitle}>My Library</Text>
                         </View>
-                        <TouchableOpacity style={styles.searchBtn} onPress={() => setIsSearchMode(true)}>
-                            <MaterialIcons name="search" size={24} color="#475569" />
-                        </TouchableOpacity>
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity
+                                style={styles.viewToggleBtn}
+                                onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                            >
+                                <MaterialIcons
+                                    name={viewMode === 'grid' ? 'view-list' : 'view-module'}
+                                    size={24}
+                                    color="#475569"
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.searchBtn} onPress={() => setIsSearchMode(true)}>
+                                <MaterialIcons name="search" size={24} color="#475569" />
+                            </TouchableOpacity>
+                        </View>
                     </>
                 )}
             </View>
@@ -156,12 +213,18 @@ export default function HomeScreen() {
                 </View>
 
                 <FlatList
+                    key={viewMode}
                     data={filteredBooks}
-                    renderItem={renderBookItem}
+                    renderItem={viewMode === 'grid' ? renderBookItemGrid : renderBookItemList}
                     keyExtractor={(item) => item.id.toString()}
-                    numColumns={2}
-                    contentContainerStyle={[styles.gridParams, filteredBooks.length === 0 && styles.emptyGridParams]}
-                    columnWrapperStyle={filteredBooks.length > 0 ? styles.gridRow : undefined}
+                    numColumns={viewMode === 'grid' ? 2 : 1}
+                    contentContainerStyle={[
+                        viewMode === 'grid' ? styles.gridParams : styles.listParams,
+                        filteredBooks.length === 0 && styles.emptyGridParams,
+                    ]}
+                    columnWrapperStyle={
+                        viewMode === 'grid' && filteredBooks.length > 0 ? styles.gridRow : undefined
+                    }
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.emptyStateContainer}>
@@ -219,6 +282,19 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#0f172a',
         letterSpacing: -0.5,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    viewToggleBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#e2e8f0',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     searchBtn: {
         width: 40,
@@ -287,6 +363,62 @@ const styles = StyleSheet.create({
     gridParams: {
         paddingHorizontal: PADDING_HORIZONTAL,
         paddingBottom: 100, // space for fab
+    },
+    listParams: {
+        paddingHorizontal: PADDING_HORIZONTAL,
+        paddingBottom: 100,
+    },
+    listRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+            },
+            android: {
+                elevation: 1,
+            },
+        }),
+    },
+    listCoverWrapper: {
+        width: LIST_COVER_WIDTH,
+        height: LIST_COVER_HEIGHT,
+        borderRadius: 8,
+        overflow: 'hidden',
+        backgroundColor: '#e2e8f0',
+    },
+    listCoverImage: {
+        width: '100%',
+        height: '100%',
+    },
+    listCardInfo: {
+        flex: 1,
+        marginLeft: 14,
+        justifyContent: 'center',
+    },
+    listCardTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#0f172a',
+        marginBottom: 4,
+    },
+    listCardAuthor: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#64748b',
+        marginBottom: 8,
+    },
+    listArrow: {
+        marginLeft: 8,
     },
     gridRow: {
         justifyContent: 'space-between',
