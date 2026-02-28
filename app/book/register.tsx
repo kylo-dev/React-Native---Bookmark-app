@@ -11,7 +11,13 @@ import {
     Image,
     ActivityIndicator,
 } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+    BottomSheetModal,
+    BottomSheetView,
+    BottomSheetBackdrop,
+    type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -83,19 +89,36 @@ export default function RegisterBookScreen() {
         }
     };
 
-    const showImageOptions = () => {
-        Alert.alert('Upload Cover', 'Choose image source', [
-            { text: 'Take Photo', onPress: () => handleImageSelection('camera') },
-            { text: 'Choose from Gallery', onPress: () => handleImageSelection('gallery') },
-            { text: 'Cancel', style: 'cancel' },
-        ]);
-    };
-
     const [saving, setSaving] = useState(false);
+    const imageSheetRef = useRef<BottomSheetModal>(null);
+    const statusSheetRef = useRef<BottomSheetModal>(null);
+
+    const IMAGE_OPTIONS: { type: 'camera' | 'gallery'; label: string }[] = [
+        { type: 'camera', label: '사진 촬영' },
+        { type: 'gallery', label: '갤러리에서 선택' },
+    ];
+
+    const renderBackdrop = useCallback(
+        (props: BottomSheetBackdropProps) => (
+            <BottomSheetBackdrop {...props} disappearsOnIndex={-1} opacity={0.5} pressBehavior="close" />
+        ),
+        [],
+    );
+
+    const showImageOptions = () => imageSheetRef.current?.present();
+
+    const STATUS_OPTIONS: { value: string; label: string }[] = [
+        { value: 'TO_READ', label: '읽을 예정' },
+        { value: 'READING', label: '읽는 중' },
+        { value: 'FINISHED', label: '완료' },
+        { value: 'CANCELLED', label: '취소함' },
+    ];
+
+    const statusOptionsToShow = isEditMode ? STATUS_OPTIONS : STATUS_OPTIONS.filter((o) => o.value !== 'CANCELLED');
 
     const handleSave = async () => {
         if (!title.trim() || !author.trim()) {
-            Alert.alert('Required Fields', 'Please enter both book title and author.');
+            Alert.alert('필수 입력', '책 제목과 저자를 모두 입력해주세요.');
             return;
         }
 
@@ -106,7 +129,7 @@ export default function RegisterBookScreen() {
             if (coverImage) {
                 const uploadedUrl = await uploadBookCover(coverImage);
                 if (!uploadedUrl) {
-                    Alert.alert('Error', '이미지 업로드에 실패했습니다.');
+                    Alert.alert('오류', '이미지 업로드에 실패했습니다.');
                     return;
                 }
                 finalCoverUrl = uploadedUrl;
@@ -121,28 +144,20 @@ export default function RegisterBookScreen() {
 
             if (isEditMode) {
                 await apiBooks.updateBook(Number(bookIdStr), payload);
-                Alert.alert('Success', 'Book updated!', [{ text: 'OK', onPress: () => router.back() }]);
+                Alert.alert('성공', '책 정보가 업데이트되었습니다.', [{ text: 'OK', onPress: () => router.back() }]);
             } else {
                 await apiBooks.createBook(payload);
-                Alert.alert('Success', 'Book registered!', [{ text: 'OK', onPress: () => router.back() }]);
+                Alert.alert('성공', '책 정보가 등록되었습니다.', [{ text: 'OK', onPress: () => router.back() }]);
             }
         } catch (e) {
             console.error('Save failed:', e);
-            Alert.alert('Error', 'Failed to save book.');
+            Alert.alert('오류', '책 정보 저장에 실패했습니다.');
         } finally {
             setSaving(false);
         }
     };
 
-    const showStatusOptions = () => {
-        Alert.alert('Status', 'Select a status', [
-            { text: 'To Read', onPress: () => setStatus('TO_READ') },
-            { text: 'Reading', onPress: () => setStatus('READING') },
-            { text: 'Finished', onPress: () => setStatus('FINISHED') },
-            { text: 'Cancelled', onPress: () => setStatus('CANCELLED') },
-            { text: 'Cancel', style: 'cancel' },
-        ]);
-    };
+    const showStatusOptions = () => statusSheetRef.current?.present();
 
     return (
         <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -185,11 +200,40 @@ export default function RegisterBookScreen() {
                         </Text>
                     </View>
 
+                    {/* Image Options Bottom Sheet */}
+                    <BottomSheetModal ref={imageSheetRef} enableDynamicSizing backdropComponent={renderBackdrop}>
+                        <BottomSheetView
+                            style={[styles.bottomSheetContent, { paddingBottom: (insets?.bottom ?? 0) + 32 }]}
+                        >
+                            <View style={styles.bottomSheetHeader}>
+                                <Text style={styles.bottomSheetTitle}>커버 업로드</Text>
+                                <TouchableOpacity
+                                    onPress={() => imageSheetRef.current?.dismiss()}
+                                    style={styles.bottomSheetCloseBtn}
+                                >
+                                    <MaterialIcons name="close" size={24} color="#0f172a" />
+                                </TouchableOpacity>
+                            </View>
+                            {IMAGE_OPTIONS.map((opt) => (
+                                <TouchableOpacity
+                                    key={opt.type}
+                                    style={styles.bottomSheetOption}
+                                    onPress={() => {
+                                        imageSheetRef.current?.dismiss();
+                                        handleImageSelection(opt.type);
+                                    }}
+                                >
+                                    <Text style={styles.bottomSheetOptionText}>{opt.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </BottomSheetView>
+                    </BottomSheetModal>
+
                     {/* Form Fields */}
                     <View style={styles.formContainer}>
                         {/* Book Title */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Book Title</Text>
+                            <Text style={styles.label}>책 제목</Text>
                             <TextInput
                                 style={styles.textInput}
                                 placeholder="e.g. The Midnight Library"
@@ -200,7 +244,7 @@ export default function RegisterBookScreen() {
 
                         {/* Author */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Author</Text>
+                            <Text style={styles.label}>저자</Text>
                             <TextInput
                                 style={styles.textInput}
                                 placeholder="e.g. Matt Haig"
@@ -211,7 +255,7 @@ export default function RegisterBookScreen() {
 
                         {/* Status */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Status</Text>
+                            <Text style={styles.label}>상태</Text>
                             {/* Simulated Select Dropdown */}
                             <TouchableOpacity
                                 style={styles.selectInput}
@@ -219,29 +263,53 @@ export default function RegisterBookScreen() {
                                 onPress={showStatusOptions}
                             >
                                 <Text style={styles.selectText}>
-                                    {status === 'TO_READ'
-                                        ? 'To Read'
-                                        : status === 'READING'
-                                          ? 'Reading'
-                                          : status === 'FINISHED'
-                                            ? 'Finished'
-                                            : 'Cancelled'}
+                                    {STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status}
                                 </Text>
                                 <MaterialIcons name="expand-more" size={20} color="#94a3b8" />
                             </TouchableOpacity>
                         </View>
 
-                        {/* Initial Thoughts */}
-                        <View style={[styles.inputGroup, { marginTop: 8 }]}>
-                            <Text style={styles.label}>Initial Thoughts (Optional)</Text>
-                            <TextInput
-                                style={[styles.textInput, styles.textArea]}
-                                placeholder="Why do you want to read this?"
-                                multiline
-                                numberOfLines={3}
-                                textAlignVertical="top"
-                            />
-                        </View>
+                        {/* Status Bottom Sheet */}
+                        <BottomSheetModal ref={statusSheetRef} enableDynamicSizing backdropComponent={renderBackdrop}>
+                            <BottomSheetView
+                                style={[styles.bottomSheetContent, { paddingBottom: (insets?.bottom ?? 0) + 32 }]}
+                            >
+                                <View style={styles.bottomSheetHeader}>
+                                    <Text style={styles.bottomSheetTitle}>상태 선택</Text>
+                                    <TouchableOpacity
+                                        onPress={() => statusSheetRef.current?.dismiss()}
+                                        style={styles.bottomSheetCloseBtn}
+                                    >
+                                        <MaterialIcons name="close" size={24} color="#0f172a" />
+                                    </TouchableOpacity>
+                                </View>
+                                {statusOptionsToShow.map((opt) => (
+                                    <TouchableOpacity
+                                        key={opt.value}
+                                        style={[
+                                            styles.bottomSheetOption,
+                                            status === opt.value && styles.bottomSheetOptionActive,
+                                        ]}
+                                        onPress={() => {
+                                            setStatus(opt.value);
+                                            statusSheetRef.current?.dismiss();
+                                        }}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.bottomSheetOptionText,
+                                                status === opt.value && styles.bottomSheetOptionTextActive,
+                                            ]}
+                                        >
+                                            {opt.label}
+                                        </Text>
+                                        {status === opt.value && (
+                                            <MaterialIcons name="check" size={20} color="#306ee8" />
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </BottomSheetView>
+                        </BottomSheetModal>
                     </View>
                 </View>
             </ScrollView>
@@ -407,6 +475,44 @@ const styles = StyleSheet.create({
     saveButtonText: {
         color: '#ffffff',
         fontSize: 16,
+        fontWeight: '600',
+    },
+    bottomSheetContent: {
+        paddingHorizontal: 20,
+        paddingBottom: 32,
+    },
+    bottomSheetHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    bottomSheetTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#0f172a',
+    },
+    bottomSheetCloseBtn: {
+        padding: 4,
+    },
+    bottomSheetOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        marginBottom: 4,
+    },
+    bottomSheetOptionActive: {
+        backgroundColor: 'rgba(48, 110, 232, 0.1)',
+    },
+    bottomSheetOptionText: {
+        fontSize: 16,
+        color: '#475569',
+    },
+    bottomSheetOptionTextActive: {
+        color: '#306ee8',
         fontWeight: '600',
     },
 });
