@@ -25,11 +25,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import { apiBooks } from '../../features/book/api/api';
 import { uploadBookCover } from '@/lib/storage';
-import {
-    BOOK_STATUS_OPTIONS,
-    getStatusLabel,
-    getStatusOptionsForCreate,
-} from '@/constants/book-status';
+import { BOOK_STATUS_OPTIONS, getStatusLabel, getStatusOptionsForCreate } from '@/constants/book-status';
 
 export default function RegisterBookScreen() {
     const router = useRouter();
@@ -68,8 +64,7 @@ export default function RegisterBookScreen() {
                     return;
                 }
                 result = await ImagePicker.launchCameraAsync({
-                    allowsEditing: true,
-                    aspect: [2, 3],
+                    allowsEditing: false,
                     quality: 0.8,
                 });
             } else {
@@ -79,8 +74,7 @@ export default function RegisterBookScreen() {
                     return;
                 }
                 result = await ImagePicker.launchImageLibraryAsync({
-                    allowsEditing: true,
-                    aspect: [2, 3],
+                    allowsEditing: false,
                     quality: 0.8,
                 });
             }
@@ -147,11 +141,10 @@ export default function RegisterBookScreen() {
 
             if (isEditMode) {
                 await apiBooks.updateBook(Number(bookIdStr), payload);
-                Alert.alert('성공', '책 정보가 업데이트되었습니다.', [{ text: 'OK', onPress: () => router.back() }]);
             } else {
                 await apiBooks.createBook(payload);
-                Alert.alert('성공', '책 정보가 등록되었습니다.', [{ text: 'OK', onPress: () => router.back() }]);
             }
+            router.back();
         } catch (e) {
             console.error('Save failed:', e);
             Alert.alert('오류', '책 정보 저장에 실패했습니다.');
@@ -265,9 +258,7 @@ export default function RegisterBookScreen() {
                                 activeOpacity={0.8}
                                 onPress={showStatusOptions}
                             >
-                                <Text style={styles.selectText}>
-                                    {getStatusLabel(status)}
-                                </Text>
+                                <Text style={styles.selectText}>{getStatusLabel(status)}</Text>
                                 <MaterialIcons name="expand-more" size={20} color="#94a3b8" />
                             </TouchableOpacity>
                         </View>

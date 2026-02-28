@@ -33,7 +33,6 @@ export default function BookDetailScreen() {
         [],
     );
 
-
     const fetchData = async () => {
         if (!bookIdStr) return;
         try {
@@ -202,7 +201,7 @@ export default function BookDetailScreen() {
             <BottomSheetModal ref={optionsSheetRef} enableDynamicSizing backdropComponent={renderBackdrop}>
                 <BottomSheetView style={[styles.bottomSheetContent, { paddingBottom: (insets?.bottom ?? 0) + 32 }]}>
                     <View style={styles.bottomSheetHeader}>
-                        <Text style={styles.bottomSheetTitle}>책 옵션</Text>
+                        <Text style={styles.bottomSheetTitle}>책 정보</Text>
                         <TouchableOpacity
                             onPress={() => optionsSheetRef.current?.dismiss()}
                             style={styles.bottomSheetCloseBtn}
@@ -253,10 +252,7 @@ export default function BookDetailScreen() {
                         return (
                             <TouchableOpacity
                                 key={opt.value}
-                                style={[
-                                    styles.bottomSheetOption,
-                                    isActive && { backgroundColor: opt.bgColor },
-                                ]}
+                                style={[styles.bottomSheetOption, isActive && { backgroundColor: opt.bgColor }]}
                                 onPress={() => {
                                     changeStatus(opt.value);
                                     statusSheetRef.current?.dismiss();
