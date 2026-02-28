@@ -35,18 +35,16 @@ export default function NewRecordScreen() {
     const [text, setText] = useState('');
     const [pageNumber, setPageNumber] = useState('');
     const [keyboardHeight, setKeyboardHeight] = useState(0);
-    const [tags, setTags] = useState<string[]>([]);
-    const [isTagging, setIsTagging] = useState(false);
-    const [tagInput, setTagInput] = useState('');
     const [isScanning, setIsScanning] = useState(false);
     const [isOcrModalVisible, setIsOcrModalVisible] = useState(false);
     const [scannedFullText, setScannedFullText] = useState('');
 
     useEffect(() => {
         if (bookIdStr) {
-            apiBooks.getBookById(Number(bookIdStr))
-                .then(data => setBook(data))
-                .catch(e => console.error('Failed to fetch book', e));
+            apiBooks
+                .getBookById(Number(bookIdStr))
+                .then((data) => setBook(data))
+                .catch((e) => console.error('Failed to fetch book', e));
         }
     }, [bookIdStr]);
 
@@ -107,17 +105,21 @@ export default function NewRecordScreen() {
                 book_id: Number(bookIdStr),
                 text: text.trim(),
                 page_number: pageNumber ? Number(pageNumber) : null,
-                tags: tags,
                 is_favorite: false,
             });
             Alert.alert('Success', `Quote recorded!`, [{ text: 'OK', onPress: () => router.back() }]);
-        } catch(e) {
+        } catch (e) {
             console.error('Failed to save quote', e);
             Alert.alert('Error', 'Failed to save quote.');
         }
     };
 
-    if (!book) return <View style={[styles.container, { paddingTop: insets.top }]}><Text>Loading...</Text></View>;
+    if (!book)
+        return (
+            <View style={[styles.container, { paddingTop: insets.top }]}>
+                <Text>Loading...</Text>
+            </View>
+        );
 
     return (
         <View style={[styles.container, { paddingBottom: keyboardHeight }]}>
@@ -129,7 +131,7 @@ export default function NewRecordScreen() {
                     <MaterialIcons name="close" size={24} color="#0f172a" />
                 </TouchableOpacity>
 
-                <Text style={styles.headerTitle}>New Record</Text>
+                <Text style={styles.headerTitle}>New Quote</Text>
 
                 <TouchableOpacity style={styles.saveBtn} activeOpacity={0.7} onPress={handleSave}>
                     <Text style={styles.saveBtnText}>Save</Text>
@@ -146,7 +148,17 @@ export default function NewRecordScreen() {
                 {/* Book Info Card */}
                 <View style={styles.bookInfoCard}>
                     <View style={styles.thumbnailWrapper}>
-                        <Image source={book?.cover_url ? { uri: book.cover_url } : undefined} style={styles.thumbnail} />
+                        {book?.cover_url ? (
+                            <Image
+                                source={{ uri: book.cover_url }}
+                                style={styles.thumbnail}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <View style={styles.thumbnailPlaceholder}>
+                                <MaterialIcons name="menu-book" size={20} color="#94a3b8" />
+                            </View>
+                        )}
                     </View>
                     <View style={styles.bookDetails}>
                         <Text style={styles.bookTitle} numberOfLines={1}>
@@ -186,43 +198,6 @@ export default function NewRecordScreen() {
                     />
                 </View>
 
-                {/* Tags List */}
-                {(tags.length > 0 || isTagging) && (
-                    <View style={styles.tagsWrapper}>
-                        {tags.map((t, i) => (
-                            <View key={i} style={styles.tagBadge}>
-                                <Text style={styles.tagText}>#{t}</Text>
-                                <TouchableOpacity onPress={() => setTags(tags.filter((_, index) => index !== i))}>
-                                    <MaterialIcons name="close" size={14} color="#64748b" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                        {isTagging && (
-                            <View style={styles.activeTagBadge}>
-                                <Text style={styles.activeTagPrefix}>#</Text>
-                                <TextInput
-                                    style={styles.activeTagInput}
-                                    placeholder="태그 입력"
-                                    placeholderTextColor="#94a3b8"
-                                    value={tagInput}
-                                    onChangeText={setTagInput}
-                                    onSubmitEditing={() => {
-                                        if (tagInput.trim()) {
-                                            setTags([...tags, tagInput.trim()]);
-                                            setTagInput('');
-                                        } else {
-                                            setIsTagging(false);
-                                        }
-                                    }}
-                                    autoFocus
-                                    returnKeyType="done"
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                />
-                            </View>
-                        )}
-                    </View>
-                )}
             </ScrollView>
 
             {/* Bottom Tool Bar */}
@@ -240,15 +215,6 @@ export default function NewRecordScreen() {
                     )}
                     <Text style={styles.scanBtnText}>{isScanning ? 'Scanning...' : 'Scan Text'}</Text>
                 </TouchableOpacity>
-
-                <View style={styles.toolbarIcons}>
-                    <TouchableOpacity
-                        style={[styles.toolbarIconBtn, isTagging && { backgroundColor: '#e2e8f0' }]}
-                        onPress={() => setIsTagging(!isTagging)}
-                    >
-                        <MaterialIcons name="tag" size={20} color="#64748b" />
-                    </TouchableOpacity>
-                </View>
             </View>
 
             {/* OCR Result Modal */}
@@ -351,12 +317,19 @@ const styles = StyleSheet.create({
         height: 56,
         borderRadius: 4,
         overflow: 'hidden',
-        backgroundColor: '#1e293b',
+        backgroundColor: '#e2e8f0',
     },
     thumbnail: {
         width: '100%',
         height: '100%',
-        opacity: 0.9,
+        padding: 4,
+    },
+    thumbnailPlaceholder: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#e2e8f0',
     },
     bookDetails: {
         flex: 1,
@@ -431,76 +404,6 @@ const styles = StyleSheet.create({
         color: '#0f172a',
         fontSize: 14,
         fontWeight: '500',
-    },
-    toolbarIcons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    toolbarIconBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    tagsWrapper: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        marginTop: 16,
-        gap: 8,
-    },
-    tagBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#e2e8f0',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-        gap: 4,
-    },
-    tagText: {
-        color: '#334155',
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    activeTagBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#ffffff',
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#306ee8',
-        gap: 2,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#306ee8',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.15,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 2,
-            },
-        }),
-    },
-    activeTagPrefix: {
-        color: '#306ee8',
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginRight: 2,
-    },
-    activeTagInput: {
-        fontSize: 14,
-        color: '#0f172a',
-        minWidth: 60,
-        paddingVertical: 2,
-        paddingHorizontal: 0,
-        margin: 0,
-        textAlignVertical: 'center',
     },
     modalOverlay: {
         flex: 1,

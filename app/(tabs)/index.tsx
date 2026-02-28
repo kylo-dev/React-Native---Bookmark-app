@@ -26,8 +26,45 @@ const LIST_COVER_WIDTH = 56;
 const LIST_COVER_HEIGHT = LIST_COVER_WIDTH * 1.45;
 
 const COVER_BG = '#e2e8f0';
+const QUOTE_BADGE_ACTIVE_THRESHOLD = 10;
 
 type ViewMode = 'grid' | 'list';
+
+const goToBookDetail = (router: any, id: number) => {
+    router.push({ pathname: '/book/[id]', params: { id: id.toString() } });
+};
+
+function QuoteBadge({ count }: { count: number }) {
+    const isActive = count >= QUOTE_BADGE_ACTIVE_THRESHOLD;
+    return (
+        <View style={[styles.quoteBadge, isActive && styles.quoteBadgeActive]}>
+            <MaterialIcons
+                name="format-quote"
+                size={12}
+                color={isActive ? '#306ee8' : '#64748b'}
+            />
+            <Text style={[styles.quoteText, isActive && styles.quoteTextActive]}>{count} quotes</Text>
+        </View>
+    );
+}
+
+function BookCover({
+    coverUrl,
+    iconSize,
+    imageStyle,
+}: {
+    coverUrl: string | null;
+    iconSize: number;
+    imageStyle: object;
+}) {
+    return coverUrl ? (
+        <Image style={imageStyle} source={{ uri: coverUrl }} resizeMode="contain" />
+    ) : (
+        <View style={styles.coverPlaceholder}>
+            <MaterialIcons name="menu-book" size={iconSize} color="#94a3b8" />
+        </View>
+    );
+}
 
 export default function HomeScreen() {
     const insets = useSafeAreaInsets();
@@ -67,36 +104,15 @@ export default function HomeScreen() {
             <TouchableOpacity
                 style={styles.cardContainer}
                 activeOpacity={0.8}
-                onPress={() => router.push({ pathname: '/book/[id]', params: { id: item.id.toString() } })}
+                onPress={() => goToBookDetail(router, item.id)}
             >
                 <View style={styles.coverWrapper}>
-                    {item.cover_url ? (
-                        <Image style={styles.coverImage} source={{ uri: item.cover_url }} resizeMode="contain" />
-                    ) : (
-                        <View style={styles.coverPlaceholder}>
-                            <MaterialIcons name="menu-book" size={48} color="#94a3b8" />
-                        </View>
-                    )}
+                    <BookCover coverUrl={item.cover_url} iconSize={48} imageStyle={styles.coverImage} />
                 </View>
-
                 <View style={styles.cardInfo}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>
-                        {item.title}
-                    </Text>
-                    <Text style={styles.cardAuthor} numberOfLines={1}>
-                        {item.author}
-                    </Text>
-
-                    <View style={[styles.quoteBadge, quotesCount >= 10 && styles.quoteBadgeActive]}>
-                        <MaterialIcons
-                            name="format-quote"
-                            size={12}
-                            color={quotesCount >= 10 ? '#306ee8' : '#64748b'}
-                        />
-                        <Text style={[styles.quoteText, quotesCount >= 10 && styles.quoteTextActive]}>
-                            {quotesCount} quotes
-                        </Text>
-                    </View>
+                    <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+                    <Text style={styles.cardAuthor} numberOfLines={1}>{item.author}</Text>
+                    <QuoteBadge count={quotesCount} />
                 </View>
             </TouchableOpacity>
         );
@@ -108,37 +124,16 @@ export default function HomeScreen() {
             <TouchableOpacity
                 style={styles.listRow}
                 activeOpacity={0.8}
-                onPress={() => router.push({ pathname: '/book/[id]', params: { id: item.id.toString() } })}
+                onPress={() => goToBookDetail(router, item.id)}
             >
                 <View style={styles.listCoverWrapper}>
-                    {item.cover_url ? (
-                        <Image style={styles.listCoverImage} source={{ uri: item.cover_url }} resizeMode="contain" />
-                    ) : (
-                        <View style={styles.coverPlaceholder}>
-                            <MaterialIcons name="menu-book" size={28} color="#94a3b8" />
-                        </View>
-                    )}
+                    <BookCover coverUrl={item.cover_url} iconSize={28} imageStyle={styles.listCoverImage} />
                 </View>
-
                 <View style={styles.listCardInfo}>
-                    <Text style={styles.listCardTitle} numberOfLines={1}>
-                        {item.title}
-                    </Text>
-                    <Text style={styles.listCardAuthor} numberOfLines={1}>
-                        {item.author}
-                    </Text>
-                    <View style={[styles.quoteBadge, quotesCount >= 10 && styles.quoteBadgeActive]}>
-                        <MaterialIcons
-                            name="format-quote"
-                            size={12}
-                            color={quotesCount >= 10 ? '#306ee8' : '#64748b'}
-                        />
-                        <Text style={[styles.quoteText, quotesCount >= 10 && styles.quoteTextActive]}>
-                            {quotesCount} quotes
-                        </Text>
-                    </View>
+                    <Text style={styles.listCardTitle} numberOfLines={1}>{item.title}</Text>
+                    <Text style={styles.listCardAuthor} numberOfLines={1}>{item.author}</Text>
+                    <QuoteBadge count={quotesCount} />
                 </View>
-
                 <MaterialIcons name="chevron-right" size={24} color="#cbd5e1" style={styles.listArrow} />
             </TouchableOpacity>
         );
@@ -178,7 +173,7 @@ export default function HomeScreen() {
                         </View>
                         <View style={styles.headerActions}>
                             <TouchableOpacity
-                                style={styles.viewToggleBtn}
+                                style={styles.headerIconBtn}
                                 onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
                             >
                                 <MaterialIcons
@@ -187,7 +182,7 @@ export default function HomeScreen() {
                                     color="#475569"
                                 />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.searchBtn} onPress={() => setIsSearchMode(true)}>
+                            <TouchableOpacity style={styles.headerIconBtn} onPress={() => setIsSearchMode(true)}>
                                 <MaterialIcons name="search" size={24} color="#475569" />
                             </TouchableOpacity>
                         </View>
@@ -228,7 +223,7 @@ export default function HomeScreen() {
                     keyExtractor={(item) => item.id.toString()}
                     numColumns={viewMode === 'grid' ? 2 : 1}
                     contentContainerStyle={[
-                        viewMode === 'grid' ? styles.gridParams : styles.listParams,
+                        styles.listParams,
                         filteredBooks.length === 0 && styles.emptyGridParams,
                     ]}
                     columnWrapperStyle={viewMode === 'grid' && filteredBooks.length > 0 ? styles.gridRow : undefined}
@@ -275,13 +270,6 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(226, 232, 240, 0.5)',
     },
-    welcomeText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#306ee8',
-        letterSpacing: 0.5,
-        marginBottom: 4,
-    },
     headerTitle: {
         fontSize: 28,
         fontWeight: 'bold',
@@ -293,15 +281,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 4,
     },
-    viewToggleBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#e2e8f0',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    searchBtn: {
+    headerIconBtn: {
         width: 40,
         height: 40,
         borderRadius: 20,
@@ -364,10 +344,6 @@ const styles = StyleSheet.create({
     },
     filterTextActive: {
         color: '#ffffff',
-    },
-    gridParams: {
-        paddingHorizontal: PADDING_HORIZONTAL,
-        paddingBottom: 100, // space for fab
     },
     listParams: {
         paddingHorizontal: PADDING_HORIZONTAL,
@@ -452,19 +428,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: COVER_BG,
-    },
-    favoriteBadge: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
     },
     cardInfo: {
         paddingHorizontal: 4,

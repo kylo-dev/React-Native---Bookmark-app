@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#e0e7ff',
+        backgroundColor: '#e2e8f0',
     },
     title: {
         fontSize: 24,
