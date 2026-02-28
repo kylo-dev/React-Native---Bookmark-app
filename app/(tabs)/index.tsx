@@ -25,6 +25,8 @@ const CARD_WIDTH = ((width - PADDING_HORIZONTAL * 2 - COLUMN_GAP) / 2) * 0.92;
 const LIST_COVER_WIDTH = 56;
 const LIST_COVER_HEIGHT = LIST_COVER_WIDTH * 1.45;
 
+const COVER_BG = '#e2e8f0';
+
 type ViewMode = 'grid' | 'list';
 
 export default function HomeScreen() {
@@ -69,17 +71,12 @@ export default function HomeScreen() {
             >
                 <View style={styles.coverWrapper}>
                     {item.cover_url ? (
-                        <Image
-                            style={[styles.coverImage, styles.coverImagePadding]}
-                            source={{ uri: item.cover_url }}
-                            resizeMode="contain"
-                        />
+                        <Image style={styles.coverImage} source={{ uri: item.cover_url }} resizeMode="contain" />
                     ) : (
                         <View style={styles.coverPlaceholder}>
                             <MaterialIcons name="menu-book" size={48} color="#94a3b8" />
                         </View>
                     )}
-                    <View style={styles.coverGradient} />
                 </View>
 
                 <View style={styles.cardInfo}>
@@ -117,11 +114,10 @@ export default function HomeScreen() {
                     {item.cover_url ? (
                         <Image style={styles.listCoverImage} source={{ uri: item.cover_url }} resizeMode="contain" />
                     ) : (
-                        <View style={styles.listCoverPlaceholder}>
+                        <View style={styles.coverPlaceholder}>
                             <MaterialIcons name="menu-book" size={28} color="#94a3b8" />
                         </View>
                     )}
-                    <View style={styles.coverGradient} />
                 </View>
 
                 <View style={styles.listCardInfo}>
@@ -403,18 +399,12 @@ const styles = StyleSheet.create({
         height: LIST_COVER_HEIGHT,
         borderRadius: 8,
         overflow: 'hidden',
-        backgroundColor: '#eef2ff',
+        backgroundColor: COVER_BG,
     },
     listCoverImage: {
         width: '100%',
         height: '100%',
-    },
-    listCoverPlaceholder: {
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#e0e7ff',
+        padding: 6,
     },
     listCardInfo: {
         flex: 1,
@@ -448,26 +438,20 @@ const styles = StyleSheet.create({
         height: CARD_WIDTH * 1.5, // Aspect ratio 2/3
         borderRadius: 10,
         overflow: 'hidden',
-        backgroundColor: '#eef2ff',
+        backgroundColor: COVER_BG,
         marginBottom: 10,
     },
     coverImage: {
         width: '100%',
         height: '100%',
-    },
-    coverImagePadding: {
-        padding: 10,
+        padding: 8,
     },
     coverPlaceholder: {
         width: '100%',
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#e0e7ff',
-    },
-    coverGradient: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.05)',
+        backgroundColor: COVER_BG,
     },
     favoriteBadge: {
         position: 'absolute',

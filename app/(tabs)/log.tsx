@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useState, useCallback } from 'react';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { apiQuotes } from '../../features/quote/api/api';
+import { formatDateYMD } from '@/utils/date';
 
 export default function LogScreen() {
     const insets = useSafeAreaInsets();
@@ -82,9 +83,7 @@ export default function LogScreen() {
 
                                     <View style={styles.cardFooter}>
                                         <Text style={styles.footerText}>{book.author || 'Unknown Author'}</Text>
-                                        <Text style={styles.footerText}>
-                                            {new Date(quote.created_at).toLocaleDateString()}
-                                        </Text>
+                                        <Text style={styles.footerText}>{formatDateYMD(quote.created_at)}</Text>
                                     </View>
                                 </TouchableOpacity>
                             );

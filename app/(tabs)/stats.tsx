@@ -7,7 +7,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { apiBooks } from '../../features/book/api/api';
 import { apiQuotes } from '../../features/quote/api/api';
 
-import { MONTHS, FULL_MONTHS, formatMonthYear } from '../../constants/date';
+import { MONTHS, FULL_MONTHS, formatMonthYearShort } from '../../constants/date';
 import { isFutureMonth, isMonthAtOrAfterCurrent } from '@/utils/date';
 
 export default function StatsScreen() {
@@ -88,7 +88,7 @@ export default function StatsScreen() {
                 <TouchableOpacity style={styles.headerTitleContainer} activeOpacity={0.7} onPress={openDatePicker}>
                     <Text style={styles.headerSubtitle}>MONTHLY LOG</Text>
                     <View style={styles.headerTitleRow}>
-                        <Text style={styles.headerTitle}>{formatMonthYear(currentDate)}</Text>
+                        <Text style={styles.headerTitle}>{formatMonthYearShort(currentDate)}</Text>
                         <MaterialIcons name="expand-more" size={20} color="#0f172a" style={{ opacity: 0.5 }} />
                     </View>
                 </TouchableOpacity>
